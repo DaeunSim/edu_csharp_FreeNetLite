@@ -1,4 +1,4 @@
-FreeNet
+FreeNet - .Net Core 
 =========
 C# Network library. Asynchronous. TCP. GameServer.
 
