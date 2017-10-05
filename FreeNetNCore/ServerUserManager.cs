@@ -9,19 +9,19 @@ namespace FreeNet
     /// <summary>
     /// 현재 접속중인 전체 유저를 관리하는 클래스.
     /// </summary>
-    public class CServerUserManager
+    public class ServerUserManager
     {
         object cs_user;
-        List<CUserToken> users;
+        List<UserToken> users;
 
         Timer timer_heartbeat;
         long heartbeat_duration;
 
 
-        public CServerUserManager()
+        public ServerUserManager()
         {
             this.cs_user = new object();
-            this.users = new List<CUserToken>();
+            this.users = new List<UserToken>();
         }
 
 
@@ -32,7 +32,7 @@ namespace FreeNet
         }
 
 
-        public void add(CUserToken user)
+        public void add(UserToken user)
         {
             lock (this.cs_user)
             {
@@ -41,7 +41,7 @@ namespace FreeNet
         }
 
 
-        public void remove(CUserToken user)
+        public void remove(UserToken user)
         {
             lock (this.cs_user)
             {
@@ -50,7 +50,7 @@ namespace FreeNet
         }
 
 
-        public bool is_exist(CUserToken user)
+        public bool is_exist(UserToken user)
         {
             lock (this.cs_user)
             {

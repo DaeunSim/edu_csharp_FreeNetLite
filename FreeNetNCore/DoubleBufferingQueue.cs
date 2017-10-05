@@ -11,26 +11,26 @@ namespace FreeNet
     /// 로직스레드에서 큐를 뒤바꾼뒤(swap) 쌓아놓은 패킷을 가져가 처리한다.
     /// 참고 : http://roadster.egloos.com/m/4199854
     /// </summary>
-    class CDoubleBufferingQueue : ILogicQueue
+    class DoubleBufferingQueue : ILogicQueue
     {
         // 실제 데이터가 들어갈 큐.
-        Queue<CPacket> queue1;
-        Queue<CPacket> queue2;
+        Queue<Packet> queue1;
+        Queue<Packet> queue2;
 
         // 각각의 큐에 대한 참조.
-        Queue<CPacket> ref_input;
-        Queue<CPacket> ref_output;
+        Queue<Packet> ref_input;
+        Queue<Packet> ref_output;
 
         object cs_write;
 
 
-        public CDoubleBufferingQueue()
+        public DoubleBufferingQueue()
         {
             // 초기 세팅은 큐와 참조가 1:1로 매칭되게 설정한다.
             // ref_input - queue1
             // ref)output - queue2
-            this.queue1 = new Queue<CPacket>();
-            this.queue2 = new Queue<CPacket>();
+            this.queue1 = new Queue<Packet>();
+            this.queue2 = new Queue<Packet>();
             this.ref_input = this.queue1;
             this.ref_output = this.queue2;
 
@@ -42,7 +42,7 @@ namespace FreeNet
         /// IO스레드에서 전달한 패킷을 보관한다.
         /// </summary>
         /// <param name="msg"></param>
-        void ILogicQueue.enqueue(CPacket msg)
+        void ILogicQueue.enqueue(Packet msg)
         {
             lock (this.cs_write)
             {
@@ -51,7 +51,7 @@ namespace FreeNet
         }
 
 
-        Queue<CPacket> ILogicQueue.get_all()
+        Queue<Packet> ILogicQueue.get_all()
         {
             swap();
             return this.ref_output;
@@ -65,7 +65,7 @@ namespace FreeNet
         {
             lock (this.cs_write)
             {
-                Queue<CPacket> temp = this.ref_input;
+                Queue<Packet> temp = this.ref_input;
                 this.ref_input = this.ref_output;
                 this.ref_output = temp;
             }

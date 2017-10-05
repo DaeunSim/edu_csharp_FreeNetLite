@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace FreeNet
 {
-    public class CUserToken
+    public class UserToken
     {
         enum State
         {
@@ -47,7 +47,7 @@ namespace FreeNet
         public SocketAsyncEventArgs send_event_args { get; private set; }
 
         // 바이트를 패킷 형식으로 해석해주는 해석기.
-        CMessageResolver message_resolver;
+        MessageResolver message_resolver;
 
         // session객체. 어플리케이션 딴에서 구현하여 사용.
         IPeer peer;
@@ -59,21 +59,21 @@ namespace FreeNet
 
         IMessageDispatcher dispatcher;
 
-        public delegate void ClosedDelegate(CUserToken token);
+        public delegate void ClosedDelegate(UserToken token);
         public ClosedDelegate on_session_closed;
 
         // heartbeat.
         public long latest_heartbeat_time { get; private set; }
-        CHeartbeatSender heartbeat_sender;
+        HeartbeatSender heartbeat_sender;
         bool auto_heartbeat;
 
 
-        public CUserToken(IMessageDispatcher dispatcher)
+        public UserToken(IMessageDispatcher dispatcher)
         {
             this.dispatcher = dispatcher;
             this.cs_sending_queue = new object();
 
-            this.message_resolver = new CMessageResolver();
+            this.message_resolver = new MessageResolver();
             this.peer = null;
             this.sending_list = new List<ArraySegment<byte>>();
             this.latest_heartbeat_time = DateTime.Now.Ticks;
@@ -126,13 +126,13 @@ namespace FreeNet
             else
             {
                 // IO스레드에서 직접 호출.
-                CPacket msg = new CPacket(buffer, this);
+                Packet msg = new Packet(buffer, this);
                 on_message(msg);
             }
         }
 
 
-        public void on_message(CPacket msg)
+        public void on_message(Packet msg)
         {
             // active close를 위한 코딩.
             //   서버에서 종료하라고 연락이 왔는지 체크한다.
@@ -149,7 +149,7 @@ namespace FreeNet
                         msg.pop_protocol_id();
                         // 전송 인터벌.
                         byte interval = msg.pop_byte();
-                        this.heartbeat_sender = new CHeartbeatSender(this, interval);
+                        this.heartbeat_sender = new HeartbeatSender(this, interval);
 
                         if (this.auto_heartbeat)
                         {
@@ -221,7 +221,7 @@ namespace FreeNet
 
             if (this.peer != null)
             {
-                CPacket msg = CPacket.create((short)-1);
+                Packet msg = Packet.create((short)-1);
                 if (this.dispatcher != null)
                 {
                     this.dispatcher.on_message(this, new ArraySegment<byte>(msg.buffer, 0, msg.position));
@@ -261,7 +261,7 @@ namespace FreeNet
         }
 
 
-        public void send(CPacket msg)
+        public void send(Packet msg)
         {
             msg.record_size();
             send(new ArraySegment<byte>(msg.buffer, 0, msg.position));
@@ -417,7 +417,7 @@ namespace FreeNet
         /// </summary>
         void byebye()
         {
-            CPacket bye = CPacket.create(SYS_CLOSE_REQ);
+            Packet bye = Packet.create(SYS_CLOSE_REQ);
             send(bye);
         }
 

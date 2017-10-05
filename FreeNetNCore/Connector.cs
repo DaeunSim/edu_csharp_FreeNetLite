@@ -13,15 +13,15 @@ namespace FreeNet
 	/// </summary>
 	public class CConnector
 	{
-		public delegate void ConnectedHandler(CUserToken token);
+		public delegate void ConnectedHandler(UserToken token);
 		public ConnectedHandler connected_callback { get; set; }
 
 		// 원격지 서버와의 연결을 위한 소켓.
 		Socket client;
 
-		CNetworkService network_service;
+		NetworkService network_service;
 
-		public CConnector(CNetworkService network_service)
+		public CConnector(NetworkService network_service)
 		{
 			this.network_service = network_service;
 			this.connected_callback = null;
@@ -48,7 +48,7 @@ namespace FreeNet
 			if (e.SocketError == SocketError.Success)
 			{
 				//Console.WriteLine("Connect completd!");
-				CUserToken token = new CUserToken(this.network_service.logic_entry);
+				UserToken token = new UserToken(this.network_service.logic_entry);
 
                 // 데이터 수신 준비.
                 this.network_service.on_connect_completed(this.client, token);

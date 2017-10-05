@@ -34,7 +34,7 @@ namespace FreeNet
         /// -> 로직 스레드에서 호출됨. 로직 스레드는 싱글 스레드로 돌아감.
         /// </summary>
         /// <param name="buffer"></param>
-        void on_message(CPacket msg);
+        void on_message(Packet msg);
 
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace FreeNet
         void on_removed();
 
 
-		void send(CPacket msg);
+		void send(Packet msg);
 
 
 		void disconnect();

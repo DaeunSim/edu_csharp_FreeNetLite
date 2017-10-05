@@ -8,15 +8,15 @@ namespace FreeNet
     //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
     // Not stable. Do not use this class!!
     //=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-    public class CPacketBufferManager
+    public class PacketBufferManager
 	{
 		static object cs_buffer = new object();
-		static Stack<CPacket> pool;
+		static Stack<Packet> pool;
 		static int pool_capacity;
 
 		public static void initialize(int capacity)
 		{
-			pool = new Stack<CPacket>();
+			pool = new Stack<Packet>();
 			pool_capacity = capacity;
 			allocate();
 		}
@@ -25,11 +25,11 @@ namespace FreeNet
 		{
 			for (int i = 0; i < pool_capacity; ++i)
 			{
-				pool.Push(new CPacket());
+				pool.Push(new Packet());
 			}
 		}
 
-		public static CPacket pop()
+		public static Packet pop()
 		{
 			lock (cs_buffer)
 			{
@@ -43,7 +43,7 @@ namespace FreeNet
 			}
 		}
 
-		public static void push(CPacket packet)
+		public static void push(Packet packet)
 		{
 			lock(cs_buffer)
 			{

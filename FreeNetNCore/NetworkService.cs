@@ -8,16 +8,16 @@ using System.Net.Sockets;
 
 namespace FreeNet
 {
-    public class CNetworkService
+    public class NetworkService
     {
 		SocketAsyncEventArgsPool receive_event_args_pool;
 		SocketAsyncEventArgsPool send_event_args_pool;
 
-		public delegate void SessionHandler(CUserToken token);
+		public delegate void SessionHandler(UserToken token);
 		public SessionHandler session_created_callback { get; set; }
 
-        public CLogicMessageEntry logic_entry { get; private set; }
-        public CServerUserManager usermanager { get; private set; }
+        public LogicMessageEntry logic_entry { get; private set; }
+        public ServerUserManager usermanager { get; private set; }
 
 
         /// <summary>
@@ -30,14 +30,14 @@ namespace FreeNet
         ///  -> IO스레드에서 직접 메시지 처리를 담당하게 된다.
         /// </summary>
         /// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
-		public CNetworkService(bool use_logicthread = false)
+		public NetworkService(bool use_logicthread = false)
 		{
 			this.session_created_callback = null;
-            this.usermanager = new CServerUserManager();
+            this.usermanager = new ServerUserManager();
 
             if (use_logicthread)
             {
-                this.logic_entry = new CLogicMessageEntry(this);
+                this.logic_entry = new LogicMessageEntry(this);
                 this.logic_entry.start();
             }
         }
@@ -113,7 +113,7 @@ namespace FreeNet
 
 		public void listen(string host, int port, int backlog)
 		{
-			CListener client_listener = new CListener();
+			Listener client_listener = new Listener();
 			client_listener.callback_on_newclient += on_new_client;
 			client_listener.start(host, port, backlog);
 
@@ -126,7 +126,7 @@ namespace FreeNet
 		/// 원격 서버에 접속 성공 했을 때 호출됩니다.
 		/// </summary>
 		/// <param name="socket"></param>
-		public void on_connect_completed(Socket socket, CUserToken token)
+		public void on_connect_completed(Socket socket, UserToken token)
 		{
             token.on_session_closed += this.on_session_closed;
             this.usermanager.add(token);
@@ -161,7 +161,7 @@ namespace FreeNet
 			SocketAsyncEventArgs send_args = this.send_event_args_pool.Pop();
 
             // UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
-            CUserToken user_token = new CUserToken(this.logic_entry);
+            UserToken user_token = new UserToken(this.logic_entry);
             user_token.on_session_closed += this.on_session_closed;
             receive_args.UserToken = user_token;
             send_args.UserToken = user_token;
@@ -176,7 +176,7 @@ namespace FreeNet
 
 			begin_receive(client_socket, receive_args, send_args);
 
-            CPacket msg = CPacket.create((short)CUserToken.SYS_START_HEARTBEAT);
+            Packet msg = Packet.create((short)UserToken.SYS_START_HEARTBEAT);
             byte send_interval = 5;
             msg.push(send_interval);
             user_token.send(msg);
@@ -185,7 +185,7 @@ namespace FreeNet
 		void begin_receive(Socket socket, SocketAsyncEventArgs receive_args, SocketAsyncEventArgs send_args)
 		{
 			// receive_args, send_args 아무곳에서나 꺼내와도 된다. 둘다 동일한 CUserToken을 물고 있다.
-			CUserToken token = receive_args.UserToken as CUserToken;
+			UserToken token = receive_args.UserToken as UserToken;
 			token.set_event_args(receive_args, send_args);
 			// 생성된 클라이언트 소켓을 보관해 놓고 통신할 때 사용한다.
 			token.socket = socket;
@@ -218,7 +218,7 @@ namespace FreeNet
 		{
             try
             {
-                CUserToken token = e.UserToken as CUserToken;
+                UserToken token = e.UserToken as UserToken;
                 token.process_send(e);
             }
             catch (Exception)
@@ -231,7 +231,7 @@ namespace FreeNet
 		//
 		private void process_receive(SocketAsyncEventArgs e)
 		{
-            CUserToken token = e.UserToken as CUserToken;
+            UserToken token = e.UserToken as UserToken;
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
                 token.on_receive(e.Buffer, e.Offset, e.BytesTransferred);
@@ -257,7 +257,7 @@ namespace FreeNet
             }
 		}
 
-        void on_session_closed(CUserToken token)
+        void on_session_closed(UserToken token)
         {
             this.usermanager.remove(token);
 

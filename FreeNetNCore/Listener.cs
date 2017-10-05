@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace FreeNet
 {
-	class CListener
+	class Listener
 	{
         // 비동기 Accept를 위한 EventArgs.
 		SocketAsyncEventArgs accept_args;
@@ -22,7 +22,7 @@ namespace FreeNet
 		public delegate void NewclientHandler(Socket client_socket, object token);
 		public NewclientHandler callback_on_newclient;
 
-        public CListener()
+        public Listener()
         {
 			this.callback_on_newclient = null;
         }

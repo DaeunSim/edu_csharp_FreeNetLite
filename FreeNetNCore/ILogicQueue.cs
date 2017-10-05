@@ -7,7 +7,7 @@ namespace FreeNet
 {
     public interface ILogicQueue
     {
-        void enqueue(CPacket msg);
-        Queue<CPacket> get_all();
+        void enqueue(Packet msg);
+        Queue<Packet> get_all();
     }
 }

@@ -9,17 +9,17 @@ namespace FreeNet
     /// <summary>
     /// 수신된 패킷을 받아 로직 스레드에서 분배하는 역할을 담당한다.
     /// </summary>
-    public class CLogicMessageEntry : IMessageDispatcher
+    public class LogicMessageEntry : IMessageDispatcher
     {
-        CNetworkService service;
+        NetworkService service;
         ILogicQueue message_queue;
         AutoResetEvent logic_event;
 
 
-        public CLogicMessageEntry(CNetworkService service)
+        public LogicMessageEntry(NetworkService service)
         {
             this.service = service;
-            this.message_queue = new CDoubleBufferingQueue();
+            this.message_queue = new DoubleBufferingQueue();
             this.logic_event = new AutoResetEvent(false);
         }
 
@@ -34,11 +34,11 @@ namespace FreeNet
         }
 
 
-        void IMessageDispatcher.on_message(CUserToken user, ArraySegment<byte> buffer)
+        void IMessageDispatcher.on_message(UserToken user, ArraySegment<byte> buffer)
         {
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.
-            CPacket msg = new CPacket(buffer, user);
+            Packet msg = new Packet(buffer, user);
             this.message_queue.enqueue(msg);
 
             // 로직 스레드를 깨워 일을 시킨다.
@@ -62,11 +62,11 @@ namespace FreeNet
         }
 
 
-        void dispatch_all(Queue<CPacket> queue)
+        void dispatch_all(Queue<Packet> queue)
         {
             while (queue.Count > 0)
             {
-                CPacket msg = queue.Dequeue();
+                Packet msg = queue.Dequeue();
                 if (!this.service.usermanager.is_exist(msg.owner))
                 {
                     continue;

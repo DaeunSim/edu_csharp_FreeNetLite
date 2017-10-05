@@ -19,7 +19,7 @@ namespace FreeNet
     ///				본문의 크기가 Int16.Max값을 넘지 않는다면 2바이트로 처리하는것이 좋을것 같다.
     /// - body : 메시지 본문.
     /// </summary>
-    class CMessageResolver
+    class MessageResolver
 	{
 		// 메시지 사이즈.
 		int message_size;
@@ -37,7 +37,7 @@ namespace FreeNet
 		// 남은 사이즈.
 		int remain_bytes;
 
-		public CMessageResolver()
+		public MessageResolver()
 		{
 			this.message_size = 0;
 			this.current_position = 0;

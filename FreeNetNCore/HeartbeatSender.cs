@@ -6,16 +6,16 @@ using System.Threading;
 
 namespace FreeNet
 {
-    class CHeartbeatSender
+    class HeartbeatSender
     {
-        CUserToken server;
+        UserToken server;
         Timer timer_heartbeat;
         uint interval;
 
         float elapsed_time;
 
 
-        public CHeartbeatSender(CUserToken server, uint interval)
+        public HeartbeatSender(UserToken server, uint interval)
         {
             this.server = server;
             this.interval = interval;
@@ -31,7 +31,7 @@ namespace FreeNet
 
         void send()
         {
-            CPacket msg = CPacket.create((short)CUserToken.SYS_UPDATE_HEARTBEAT);
+            Packet msg = Packet.create((short)UserToken.SYS_UPDATE_HEARTBEAT);
             this.server.send(msg);
         }
 

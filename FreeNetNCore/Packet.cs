@@ -8,30 +8,30 @@ namespace FreeNet
 	/// <summary>
 	/// byte[] 버퍼를 참조로 보관하여 pop_xxx 매소드 호출 순서대로 데이터 변환을 수행한다.
 	/// </summary>
-	public class CPacket
+	public class Packet
 	{
-		public CUserToken owner { get; private set; }
+		public UserToken owner { get; private set; }
 		public byte[] buffer { get; private set; }
 		public int position { get; private set; }
         public int size { get; private set; }
 
 		public Int16 protocol_id { get; private set; }
 
-		public static CPacket create(Int16 protocol_id)
+		public static Packet create(Int16 protocol_id)
 		{
-			CPacket packet = new CPacket();
+			Packet packet = new Packet();
             //todo:다음 리팩토링 대상은 바로 여기다. CPacketBufferManager!!!
             //CPacket packet = CPacketBufferManager.pop();
             packet.set_protocol(protocol_id);
 			return packet;
 		}
 
-		public static void destroy(CPacket packet)
+		public static void destroy(Packet packet)
 		{
 			//CPacketBufferManager.push(packet);
 		}
 
-        public CPacket(ArraySegment<byte> buffer, CUserToken owner)
+        public Packet(ArraySegment<byte> buffer, UserToken owner)
         {
             // 참조로만 보관하여 작업한다.
             // 복사가 필요하면 별도로 구현해야 한다.
@@ -48,7 +48,7 @@ namespace FreeNet
             this.owner = owner;
         }
 
-        public CPacket(byte[] buffer, CUserToken owner)
+        public Packet(byte[] buffer, UserToken owner)
 		{
 			// 참조로만 보관하여 작업한다.
 			// 복사가 필요하면 별도로 구현해야 한다.
@@ -60,7 +60,7 @@ namespace FreeNet
 			this.owner = owner;
 		}
 
-		public CPacket()
+		public Packet()
 		{
 			this.buffer = new byte[1024];
 		}
@@ -70,7 +70,7 @@ namespace FreeNet
 			return pop_int16();
 		}
 
-		public void copy_to(CPacket target)
+		public void copy_to(Packet target)
 		{
 			target.set_protocol(this.protocol_id);
 			target.overwrite(this.buffer, this.position);
