@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SampleServer
 {
     class Program
     {
-        static List<CGameUser> userlist;
+        static List<GameUser> userlist;
 
         static void Main(string[] args)
         {
-            userlist = new List<CGameUser>();
+            userlist = new List<GameUser>();
 
-            CNetworkService service = new CNetworkService(false);
+            var service = new FreeNet.NetworkService(false);
+
             // 콜백 매소드 설정.
             service.session_created_callback += on_session_created;
             // 초기화.
@@ -39,16 +41,16 @@ namespace SampleServer
 		/// n개의 워커 스레드에서 호출될 수 있으므로 공유 자원 접근시 동기화 처리를 해줘야 합니다.
 		/// </summary>
 		/// <returns></returns>
-		static void on_session_created(CUserToken token)
+		static void on_session_created(FreeNet.UserToken token)
         {
-            CGameUser user = new CGameUser(token);
+            var user = new GameUser(token);
             lock (userlist)
             {
                 userlist.Add(user);
             }
         }
 
-        public static void remove_user(CGameUser user)
+        public static void remove_user(GameUser user)
         {
             lock (userlist)
             {

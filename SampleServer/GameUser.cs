@@ -5,18 +5,16 @@ using System.Text;
 using System.Threading.Tasks;
 using FreeNet;
 
-namespace CSampleServer
-{
-	using GameServer;
-
+namespace SampleServer
+{	
 	/// <summary>
 	/// 하나의 session객체를 나타낸다.
 	/// </summary>
-	class CGameUser : IPeer
+	class GameUser : IPeer
 	{
-		CUserToken token;
+		UserToken token;
 
-		public CGameUser(CUserToken token)
+		public GameUser(UserToken token)
 		{
 			this.token = token;
 			this.token.set_peer(this);
@@ -29,7 +27,7 @@ namespace CSampleServer
 			Program.remove_user(this);
 		}
 
-		public void send(CPacket msg)
+		public void send(Packet msg)
 		{
             msg.record_size();
             this.token.send(new ArraySegment<byte>(msg.buffer, 0, msg.position));
@@ -45,7 +43,7 @@ namespace CSampleServer
             this.token.ban();
 		}
 
-		void IPeer.on_message(CPacket msg)
+		void IPeer.on_message(Packet msg)
 		{
             // ex)
             PROTOCOL protocol = (PROTOCOL)msg.pop_protocol_id();
@@ -58,7 +56,7 @@ namespace CSampleServer
                         string text = msg.pop_string();
                         Console.WriteLine(string.Format("text {0}", text));
 
-                        CPacket response = CPacket.create((short)PROTOCOL.CHAT_MSG_ACK);
+                        var response = Packet.create((short)PROTOCOL.CHAT_MSG_ACK);
                         response.push(text);
                         send(response);
 
@@ -67,7 +65,7 @@ namespace CSampleServer
                             // 대량의 메시지를 한꺼번에 보낸 후 종료하는 시나리오 테스트.
                             for (int i = 0; i < 1000; ++i)
                             {
-                                CPacket dummy = CPacket.create((short)PROTOCOL.CHAT_MSG_ACK);
+                                var dummy = Packet.create((short)PROTOCOL.CHAT_MSG_ACK);
                                 dummy.push(i.ToString());
                                 send(dummy);
                             }
