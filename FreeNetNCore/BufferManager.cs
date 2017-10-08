@@ -15,18 +15,18 @@ namespace FreeNet
     internal class BufferManager
     {
 
-        int m_numBytes;                 // the total number of bytes controlled by the buffer pool
-        byte[] m_buffer;                // the underlying byte array maintained by the Buffer Manager
-        Stack<int> m_freeIndexPool;     // 
-        int m_currentIndex;
-        int m_bufferSize;
+        int TotalBufferSize;                 // the total number of bytes controlled by the buffer pool
+        byte[] Buffer;                // the underlying byte array maintained by the Buffer Manager
+        //Stack<int> FreeIndexPool;   // 사용하지 않음 
+        int CurrentIndex;
+        int BufferSizeBySocketAsyncEventArgs;
 
         public BufferManager(int totalBytes, int bufferSize)
         {
-            m_numBytes = totalBytes;
-            m_currentIndex = 0;
-            m_bufferSize = bufferSize;
-            m_freeIndexPool = new Stack<int>();
+            TotalBufferSize = totalBytes;
+            CurrentIndex = 0;
+            BufferSizeBySocketAsyncEventArgs = bufferSize;
+            //FreeIndexPool = new Stack<int>();
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace FreeNet
         public void InitBuffer()
         {
             // create one big large buffer and divide that out to each SocketAsyncEventArg object
-            m_buffer = new byte[m_numBytes];
+            Buffer = new byte[TotalBufferSize];
         }
 
         /// <summary>
@@ -44,30 +44,44 @@ namespace FreeNet
         /// <returns>true if the buffer was successfully set, else false</returns>
         public bool SetBuffer(SocketAsyncEventArgs args)
         {
-            if (m_freeIndexPool.Count > 0)
+            if ((TotalBufferSize - BufferSizeBySocketAsyncEventArgs) < CurrentIndex)
             {
-                args.SetBuffer(m_buffer, m_freeIndexPool.Pop(), m_bufferSize);
+                return false;
             }
-            else
-            {
-                if ((m_numBytes - m_bufferSize) < m_currentIndex)
-                {
-                    return false;
-                }
-                args.SetBuffer(m_buffer, m_currentIndex, m_bufferSize);
-                m_currentIndex += m_bufferSize;
-            }
+
+            args.SetBuffer(Buffer, CurrentIndex, BufferSizeBySocketAsyncEventArgs);
+            CurrentIndex += BufferSizeBySocketAsyncEventArgs;
+            
             return true;
         }
+        // 사용하지 않음
+        //public bool SetBuffer(SocketAsyncEventArgs args)
+        //{
+        //    if (FreeIndexPool.Count > 0)
+        //    {
+        //        args.SetBuffer(Buffer, FreeIndexPool.Pop(), BufferSizeBySocketAsyncEventArgs);
+        //    }
+        //    else
+        //    {
+        //        if ((TotalBufferSize - BufferSizeBySocketAsyncEventArgs) < CurrentIndex)
+        //        {
+        //            return false;
+        //        }
 
+        //        args.SetBuffer(Buffer, CurrentIndex, BufferSizeBySocketAsyncEventArgs);
+        //        CurrentIndex += BufferSizeBySocketAsyncEventArgs;
+        //    }
+        //    return true;
+        //}
+        //
         /// <summary>
         /// Removes the buffer from a SocketAsyncEventArg object.  This frees the buffer back to the 
         /// buffer pool
         /// </summary>
-        public void FreeBuffer(SocketAsyncEventArgs args)
-        {
-            m_freeIndexPool.Push(args.Offset);
-            args.SetBuffer(null, 0, 0);
-        }
+        //public void FreeBuffer(SocketAsyncEventArgs args)
+        //{
+        //    FreeIndexPool.Push(args.Offset);
+        //    args.SetBuffer(null, 0, 0);
+        //}
     }
 }
