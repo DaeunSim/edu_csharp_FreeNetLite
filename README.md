@@ -1,7 +1,7 @@
 FreeNet - .Net Core 
 =========
 원 버전은 닷넷 3.5 지원인데 .Net Core 지원으로 바꾼 것이다.  
-(그리고 파일이나 코드의 이름이 조금식 변경 되었다)  
+(그리고 파일이나 코드의 이름이 조금 변경 되었다)  
   
 C# Network library. Asynchronous. TCP. GameServer.
 
