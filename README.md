@@ -1,5 +1,8 @@
 FreeNet - .Net Core 
 =========
+원 버전은 닷넷 3.5 지원인데 .Net Core 지원으로 바꾼 것이다.  
+(그리고 파일이나 코드의 이름이 조금식 변경 되었다)  
+  
 C# Network library. Asynchronous. TCP. GameServer.
 
 Version
@@ -11,14 +14,14 @@ Version
 ----------
 * C# 비동기 네트워크 라이브러리.
 * 게임 서버에서 사용할 수 있는 TCP기반의 socket server.
-* .Net Framework 3.5 사용
+* .Net Core 2.0 사용
 * Unity 연동 가능
 
 Project info
 ----------
 * C# Asynchronous network library.
 * TCP socket server that can be used in game server.
-* .Net Framework 3.5
+* .Net Core 2.0 3.5
 * Available in unity3d.
 
 Sample Game
