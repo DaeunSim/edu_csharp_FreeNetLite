@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FreeNetNCore\FreeNetNCore.csproj" />
+    <ProjectReference Include="..\FreeNet\FreeNet.csproj" />
   </ItemGroup>
 
 </Project>

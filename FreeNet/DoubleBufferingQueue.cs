@@ -14,25 +14,24 @@ namespace FreeNet
     class DoubleBufferingQueue : ILogicQueue
     {
         // 실제 데이터가 들어갈 큐.
-        Queue<Packet> queue1;
-        Queue<Packet> queue2;
+        Queue<Packet> Queue1;
+        Queue<Packet> Queue2;
 
         // 각각의 큐에 대한 참조.
-        Queue<Packet> ref_input;
-        Queue<Packet> ref_output;
+        Queue<Packet> RefInput;
+        Queue<Packet> RefOutput;
 
+        //TODO: SpinLock 사용으로 바꾼다
         object cs_write;
 
 
         public DoubleBufferingQueue()
         {
             // 초기 세팅은 큐와 참조가 1:1로 매칭되게 설정한다.
-            // ref_input - queue1
-            // ref)output - queue2
-            this.queue1 = new Queue<Packet>();
-            this.queue2 = new Queue<Packet>();
-            this.ref_input = this.queue1;
-            this.ref_output = this.queue2;
+            this.Queue1 = new Queue<Packet>();
+            this.Queue2 = new Queue<Packet>();
+            this.RefInput = this.Queue1;
+            this.RefOutput = this.Queue2;
 
             this.cs_write = new object();
         }
@@ -42,19 +41,19 @@ namespace FreeNet
         /// IO스레드에서 전달한 패킷을 보관한다.
         /// </summary>
         /// <param name="msg"></param>
-        void ILogicQueue.enqueue(Packet msg)
+        public void Enqueue(Packet msg)
         {
             lock (this.cs_write)
             {
-                this.ref_input.Enqueue(msg);
+                this.RefInput.Enqueue(msg);
             }
         }
 
 
-        Queue<Packet> ILogicQueue.get_all()
+        public Queue<Packet> TakeAll()
         {
             swap();
-            return this.ref_output;
+            return this.RefOutput;
         }
 
 
@@ -65,9 +64,9 @@ namespace FreeNet
         {
             lock (this.cs_write)
             {
-                Queue<Packet> temp = this.ref_input;
-                this.ref_input = this.ref_output;
-                this.ref_output = temp;
+                Queue<Packet> temp = this.RefInput;
+                this.RefInput = this.RefOutput;
+                this.RefOutput = temp;
             }
         }
     }

@@ -39,7 +39,7 @@ namespace FreeNet
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.
             Packet msg = new Packet(buffer, user);
-            this.message_queue.enqueue(msg);
+            this.message_queue.Enqueue(msg);
 
             // 로직 스레드를 깨워 일을 시킨다.
             this.logic_event.Set();
@@ -57,7 +57,7 @@ namespace FreeNet
                 this.logic_event.WaitOne();
 
                 // 메시지를 분배한다.
-                dispatch_all(this.message_queue.get_all());
+                dispatch_all(this.message_queue.TakeAll());
             }
         }
 

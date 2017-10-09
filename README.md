@@ -1,8 +1,9 @@
 FreeNet - .Net Core 
 =========
 원 버전은 닷넷 3.5 지원인데 .Net Core 지원으로 바꾼 것이다.  
-(그리고 파일이나 코드의 이름이 조금 변경 되었다)  
-  
+FreeNet은 .Net Standard 2,0 버전이고, SampleServer는 .Net Core 2.0 버전이다.  
+(그리고 코드 리팩토링도 하였다)    
+   
 C# Network library. Asynchronous. TCP. GameServer.
 
 Version
@@ -21,7 +22,7 @@ Project info
 ----------
 * C# Asynchronous network library.
 * TCP socket server that can be used in game server.
-* .Net Core 2.0 3.5
+* .Net Core 2.0
 * Available in unity3d.
 
 Sample Game

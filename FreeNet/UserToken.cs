@@ -432,7 +432,7 @@ namespace FreeNet
         {
             if (this.heartbeat_sender != null)
             {
-                this.heartbeat_sender.play();
+                this.heartbeat_sender.Play();
             }
         }
 
@@ -441,7 +441,7 @@ namespace FreeNet
         {
             if (this.heartbeat_sender != null)
             {
-                this.heartbeat_sender.stop();
+                this.heartbeat_sender.Stop();
             }
         }
 
@@ -457,7 +457,7 @@ namespace FreeNet
         {
             if (this.heartbeat_sender != null)
             {
-                this.heartbeat_sender.update(time);
+                this.heartbeat_sender.Update(time);
             }
         }
     }
