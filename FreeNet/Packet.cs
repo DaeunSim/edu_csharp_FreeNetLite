@@ -10,23 +10,23 @@ namespace FreeNet
 	/// </summary>
 	public class Packet
 	{
-		public UserToken owner { get; private set; }
-		public byte[] buffer { get; private set; }
-		public int position { get; private set; }
-        public int size { get; private set; }
+		public UserToken Owner { get; private set; }
+		public byte[] Buffer { get; private set; }
+		public int Position { get; private set; }
+        public int Size { get; private set; }
 
-		public Int16 protocol_id { get; private set; }
+		public Int16 ProtocolId { get; private set; }
 
-		public static Packet create(Int16 protocol_id)
+		public static Packet Create(Int16 protocol_id)
 		{
 			Packet packet = new Packet();
             //todo:다음 리팩토링 대상은 바로 여기다. CPacketBufferManager!!!
             //CPacket packet = CPacketBufferManager.pop();
-            packet.set_protocol(protocol_id);
+            packet.SetProtocol(protocol_id);
 			return packet;
 		}
 
-		public static void destroy(Packet packet)
+		public static void Destroy(Packet packet)
 		{
 			//CPacketBufferManager.push(packet);
 		}
@@ -35,160 +35,160 @@ namespace FreeNet
         {
             // 참조로만 보관하여 작업한다.
             // 복사가 필요하면 별도로 구현해야 한다.
-            this.buffer = buffer.Array;
+            Buffer = buffer.Array;
 
             // 헤더는 읽을필요 없으니 그 이후부터 시작한다.
-            this.position = Defines.HEADERSIZE;
-            this.size = buffer.Count;
+            Position = Defines.HEADERSIZE;
+            Size = buffer.Count;
 
             // 프로토콜 아이디만 확인할 경우도 있으므로 미리 뽑아놓는다.
-            this.protocol_id = pop_protocol_id();
-            this.position = Defines.HEADERSIZE;
+            ProtocolId = PopProtocolId();
+            Position = Defines.HEADERSIZE;
 
-            this.owner = owner;
+            Owner = owner;
         }
 
         public Packet(byte[] buffer, UserToken owner)
 		{
 			// 참조로만 보관하여 작업한다.
 			// 복사가 필요하면 별도로 구현해야 한다.
-			this.buffer = buffer;
+			Buffer = buffer;
 
 			// 헤더는 읽을필요 없으니 그 이후부터 시작한다.
-			this.position = Defines.HEADERSIZE;
+			Position = Defines.HEADERSIZE;
 
-			this.owner = owner;
+			Owner = owner;
 		}
 
 		public Packet()
 		{
-			this.buffer = new byte[1024];
+			this.Buffer = new byte[1024];
 		}
 
-		public Int16 pop_protocol_id()
+		public Int16 PopProtocolId()
 		{
-			return pop_int16();
+			return PopInt16();
 		}
 
-		public void copy_to(Packet target)
+		public void CopyTo(Packet target)
 		{
-			target.set_protocol(this.protocol_id);
-			target.overwrite(this.buffer, this.position);
+			target.SetProtocol(this.ProtocolId);
+			target.OverWrite(this.Buffer, this.Position);
 		}
 
-		public void overwrite(byte[] source, int position)
+		public void OverWrite(byte[] source, int position)
 		{
-			Array.Copy(source, this.buffer, source.Length);
-			this.position = position;
+			Array.Copy(source, this.Buffer, source.Length);
+			this.Position = position;
 		}
 
-		public byte pop_byte()
+		public byte PopByte()
 		{
-            byte data = this.buffer[this.position];
-            this.position += sizeof(byte);
+            byte data = this.Buffer[this.Position];
+            this.Position += sizeof(byte);
 			return data;
 		}
 
-		public Int16 pop_int16()
+		public Int16 PopInt16()
 		{
-			Int16 data = BitConverter.ToInt16(this.buffer, this.position);
-			this.position += sizeof(Int16);
+			Int16 data = BitConverter.ToInt16(this.Buffer, this.Position);
+			this.Position += sizeof(Int16);
 			return data;
 		}
 
-		public Int32 pop_int32()
+		public Int32 PopInt32()
 		{
-			Int32 data = BitConverter.ToInt32(this.buffer, this.position);
-			this.position += sizeof(Int32);
+			Int32 data = BitConverter.ToInt32(this.Buffer, this.Position);
+			this.Position += sizeof(Int32);
 			return data;
 		}
 
-		public string pop_string()
+		public string PopString()
 		{
 			// 문자열 길이는 최대 2바이트 까지. 0 ~ 32767
-			Int16 len = BitConverter.ToInt16(this.buffer, this.position);
-			this.position += sizeof(Int16);
+			Int16 len = BitConverter.ToInt16(this.Buffer, this.Position);
+			this.Position += sizeof(Int16);
 
 			// 인코딩은 utf8로 통일한다.
-			string data = System.Text.Encoding.UTF8.GetString(this.buffer, this.position, len);
-			this.position += len;
+			string data = System.Text.Encoding.UTF8.GetString(this.Buffer, this.Position, len);
+			this.Position += len;
 
 			return data;
 		}
 
-        public float pop_float()
+        public float PopFloat()
         {
-            float data = BitConverter.ToSingle(this.buffer, this.position);
-            this.position += sizeof(float);
+            float data = BitConverter.ToSingle(this.Buffer, this.Position);
+            this.Position += sizeof(float);
             return data;
         }
 
 
 
-		public void set_protocol(Int16 protocol_id)
+		public void SetProtocol(Int16 protocol_id)
 		{
-			this.protocol_id = protocol_id;
+			ProtocolId = protocol_id;
 			//this.buffer = new byte[1024];
 
 			// 헤더는 나중에 넣을것이므로 데이터 부터 넣을 수 있도록 위치를 점프시켜놓는다.
-			this.position = Defines.HEADERSIZE;
+			Position = Defines.HEADERSIZE;
 
-			push_int16(protocol_id);
+			PushInt16(protocol_id);
 		}
 
-		public void record_size()
+		public void RecordSize()
 		{
             // header + body 를 합한 사이즈를 입력한다.
-            byte[] header = BitConverter.GetBytes(this.position);
-			header.CopyTo(this.buffer, 0);
+            byte[] header = BitConverter.GetBytes(this.Position);
+			header.CopyTo(this.Buffer, 0);
 		}
 
-		public void push_int16(Int16 data)
+		public void PushInt16(Int16 data)
 		{
 			byte[] temp_buffer = BitConverter.GetBytes(data);
-			temp_buffer.CopyTo(this.buffer, this.position);
-			this.position += temp_buffer.Length;
+			temp_buffer.CopyTo(this.Buffer, this.Position);
+			Position += temp_buffer.Length;
 		}
 
-		public void push(byte data)
+		public void Push(byte data)
 		{
 			byte[] temp_buffer = BitConverter.GetBytes(data);
-			temp_buffer.CopyTo(this.buffer, this.position);
-			this.position += sizeof(byte);
+			temp_buffer.CopyTo(this.Buffer, this.Position);
+			Position += sizeof(byte);
 		}
 
-		public void push(Int16 data)
+		public void Push(Int16 data)
 		{
 			byte[] temp_buffer = BitConverter.GetBytes(data);
-			temp_buffer.CopyTo(this.buffer, this.position);
-			this.position += temp_buffer.Length;
+			temp_buffer.CopyTo(this.Buffer, this.Position);
+			Position += temp_buffer.Length;
 		}
 
-		public void push(Int32 data)
+		public void Push(Int32 data)
 		{
 			byte[] temp_buffer = BitConverter.GetBytes(data);
-			temp_buffer.CopyTo(this.buffer, this.position);
-			this.position += temp_buffer.Length;
+			temp_buffer.CopyTo(this.Buffer, this.Position);
+			Position += temp_buffer.Length;
 		}
 
-		public void push(string data)
+		public void Push(string data)
 		{
 			byte[] temp_buffer = Encoding.UTF8.GetBytes(data);
 
 			Int16 len = (Int16)temp_buffer.Length;
 			byte[] len_buffer = BitConverter.GetBytes(len);
-			len_buffer.CopyTo(this.buffer, this.position);
-			this.position += sizeof(Int16);
+			len_buffer.CopyTo(this.Buffer, this.Position);
+			Position += sizeof(Int16);
 
-			temp_buffer.CopyTo(this.buffer, this.position);
-			this.position += temp_buffer.Length;
+			temp_buffer.CopyTo(this.Buffer, this.Position);
+			Position += temp_buffer.Length;
 		}
 
-        public void push(float data)
+        public void Push(float data)
         {
             byte[] temp_buffer = BitConverter.GetBytes(data);
-            temp_buffer.CopyTo(this.buffer, this.position);
-            this.position += temp_buffer.Length;
+            temp_buffer.CopyTo(this.Buffer, this.Position);
+            Position += temp_buffer.Length;
         }
 	}
 }

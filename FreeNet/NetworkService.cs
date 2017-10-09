@@ -176,9 +176,9 @@ namespace FreeNet
 
 			begin_receive(client_socket, receive_args, send_args);
 
-            Packet msg = Packet.create((short)UserToken.SYS_START_HEARTBEAT);
+            Packet msg = Packet.Create((short)UserToken.SYS_START_HEARTBEAT);
             byte send_interval = 5;
-            msg.push(send_interval);
+            msg.Push(send_interval);
             user_token.send(msg);
         }
 

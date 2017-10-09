@@ -137,7 +137,7 @@ namespace FreeNet
             // active close를 위한 코딩.
             //   서버에서 종료하라고 연락이 왔는지 체크한다.
             //   만약 종료신호가 맞다면 disconnect를 호출하여 받은쪽에서 먼저 종료 요청을 보낸다.
-            switch (msg.protocol_id)
+            switch (msg.ProtocolId)
             {
                 case SYS_CLOSE_REQ:
                     disconnect();
@@ -146,9 +146,9 @@ namespace FreeNet
                 case SYS_START_HEARTBEAT:
                     {
                         // 순서대로 파싱해야 하므로 프로토콜 아이디는 버린다.
-                        msg.pop_protocol_id();
+                        msg.PopProtocolId();
                         // 전송 인터벌.
-                        byte interval = msg.pop_byte();
+                        byte interval = msg.PopByte();
                         this.heartbeat_sender = new HeartbeatSender(this, interval);
 
                         if (this.auto_heartbeat)
@@ -169,7 +169,7 @@ namespace FreeNet
             {
                 try
                 {
-                    switch (msg.protocol_id)
+                    switch (msg.ProtocolId)
                     {
                         case SYS_CLOSE_ACK:
                             this.peer.on_removed();
@@ -186,7 +186,7 @@ namespace FreeNet
                 }
             }
 
-            if (msg.protocol_id == SYS_CLOSE_ACK)
+            if (msg.ProtocolId == SYS_CLOSE_ACK)
             {
                 if (this.on_session_closed != null)
                 {
@@ -221,10 +221,10 @@ namespace FreeNet
 
             if (this.peer != null)
             {
-                Packet msg = Packet.create((short)-1);
+                Packet msg = Packet.Create((short)-1);
                 if (this.dispatcher != null)
                 {
-                    this.dispatcher.on_message(this, new ArraySegment<byte>(msg.buffer, 0, msg.position));
+                    this.dispatcher.on_message(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
                 }
                 else
                 {
@@ -263,8 +263,8 @@ namespace FreeNet
 
         public void send(Packet msg)
         {
-            msg.record_size();
-            send(new ArraySegment<byte>(msg.buffer, 0, msg.position));
+            msg.RecordSize();
+            send(new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
         }
 
 
@@ -417,7 +417,7 @@ namespace FreeNet
         /// </summary>
         void byebye()
         {
-            Packet bye = Packet.create(SYS_CLOSE_REQ);
+            Packet bye = Packet.Create(SYS_CLOSE_REQ);
             send(bye);
         }
 
