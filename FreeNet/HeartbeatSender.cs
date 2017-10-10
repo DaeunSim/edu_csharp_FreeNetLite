@@ -32,7 +32,7 @@ namespace FreeNet
         void Send()
         {
             Packet msg = Packet.Create((short)UserToken.SYS_UPDATE_HEARTBEAT);
-            this.Remote.send(msg);
+            this.Remote.Send(msg);
         }
 
 

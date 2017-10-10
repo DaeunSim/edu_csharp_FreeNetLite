@@ -11,28 +11,32 @@ namespace FreeNet
 	class Listener
 	{
         // 비동기 Accept를 위한 EventArgs.
-		SocketAsyncEventArgs accept_args;
+		SocketAsyncEventArgs Accept_Args;
 
-		Socket listen_socket;
+		Socket ListenSocket;
 
         // Accept처리의 순서를 제어하기 위한 이벤트 변수.
-		AutoResetEvent flow_control_event;
+		AutoResetEvent FlowControlEvent;
 
         // 새로운 클라이언트가 접속했을 때 호출되는 콜백.
-		public delegate void NewclientHandler(Socket client_socket, object token);
-		public NewclientHandler callback_on_newclient;
+		//public delegate void NewclientHandler(Socket client_socket, object token);
+		//public NewclientHandler callback_on_newclient;
+        public Action<Socket, object> OnNewClientCallback;
+
 
         public Listener()
         {
-			this.callback_on_newclient = null;
+			OnNewClientCallback = null;
         }
 
-		public void start(string host, int port, int backlog)
+		public void Start(string host, int port, int backlog)
 		{
-			this.listen_socket = new Socket(AddressFamily.InterNetwork,
-				SocketType.Stream, ProtocolType.Tcp);
+			ListenSocket = new Socket(AddressFamily.InterNetwork,
+				            SocketType.Stream, ProtocolType.Tcp);
 
-			IPAddress address;
+
+            IPAddress address;
+
 			if (host == "0.0.0.0")
 			{
 				address = IPAddress.Any;
@@ -41,22 +45,24 @@ namespace FreeNet
 			{
 				address = IPAddress.Parse(host);
 			}
-			IPEndPoint endpoint = new IPEndPoint(address, port);
 
-			try
+            IPEndPoint endpoint = new IPEndPoint(address, port);
+
+
+            try
 			{
-				listen_socket.Bind(endpoint);
-				listen_socket.Listen(backlog);
+				ListenSocket.Bind(endpoint);
+				ListenSocket.Listen(backlog);
 
-				this.accept_args = new SocketAsyncEventArgs();
-				this.accept_args.Completed += new EventHandler<SocketAsyncEventArgs>(on_accept_completed);
+				this.Accept_Args = new SocketAsyncEventArgs();
+				this.Accept_Args.Completed += new EventHandler<SocketAsyncEventArgs>(OnAcceptCompleted);
 
-                Thread listen_thread = new Thread(do_listen);
+                Thread listen_thread = new Thread(DoListen);
                 listen_thread.Start();
 			}
 			catch (Exception e)
 			{
-				//Console.WriteLine(e.Message);
+				Console.WriteLine(e.Message);
 			}
 		}
 
@@ -64,26 +70,27 @@ namespace FreeNet
         /// 루프를 돌며 클라이언트를 받아들입니다.
         /// 하나의 접속 처리가 완료된 후 다음 accept를 수행하기 위해서 event객체를 통해 흐름을 제어하도록 구현되어 있습니다.
         /// </summary>
-		void do_listen()
+		void DoListen()
 		{
-            this.flow_control_event = new AutoResetEvent(false);
+            FlowControlEvent = new AutoResetEvent(false);
 
 			while (true)
 			{
 				// SocketAsyncEventArgs를 재사용 하기 위해서 null로 만들어 준다.
-				this.accept_args.AcceptSocket = null;
+				Accept_Args.AcceptSocket = null;
 
 				bool pending = true;
+
 				try
 				{
 					// 비동기 accept를 호출하여 클라이언트의 접속을 받아들입니다.
 					// 비동기 매소드 이지만 동기적으로 수행이 완료될 경우도 있으니
 					// 리턴값을 확인하여 분기시켜야 합니다.
-					pending = listen_socket.AcceptAsync(this.accept_args);
+					pending = ListenSocket.AcceptAsync(this.Accept_Args);
 				}
 				catch (Exception e)
 				{
-					//Console.WriteLine(e.Message);
+					Console.WriteLine(e.Message);
 					continue;
 				}
 
@@ -92,11 +99,11 @@ namespace FreeNet
 				// http://msdn.microsoft.com/ko-kr/library/system.net.sockets.socket.acceptasync%28v=vs.110%29.aspx
 				if (!pending)
 				{
-					on_accept_completed(null, this.accept_args);
+					OnAcceptCompleted(null, this.Accept_Args);
 				}
 
 				// 클라이언트 접속 처리가 완료되면 이벤트 객체의 신호를 전달받아 다시 루프를 수행하도록 합니다.
-				this.flow_control_event.WaitOne();
+				FlowControlEvent.WaitOne();
 
 				// *팁 : 반드시 WaitOne -> Set 순서로 호출 되야 하는 것은 아닙니다.
 				//      Accept작업이 굉장히 빨리 끝나서 Set -> WaitOne 순서로 호출된다고 하더라도 
@@ -110,7 +117,7 @@ namespace FreeNet
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e">AcceptAsync 매소드 호출시 사용된 EventArgs</param>
-		void on_accept_completed(object sender, SocketAsyncEventArgs e)
+		void OnAcceptCompleted(object sender, SocketAsyncEventArgs e)
 		{
             if (e.SocketError == SocketError.Success)
             {
@@ -124,13 +131,13 @@ namespace FreeNet
                 // 컨텐츠 구현부분은 자주 바뀔 가능성이 있지만, 소켓 Accept부분은 상대적으로 변경이 적은 부분이기 때문에
                 // 양쪽을 분리시켜주는것이 좋습니다.
                 // 또한 클래스 설계 방침에 따라 Listen에 관련된 코드만 존재하도록 하기 위한 이유도 있습니다.
-                if (this.callback_on_newclient != null)
+                if (this.OnNewClientCallback != null)
                 {
-                    this.callback_on_newclient(client_socket, e.UserToken);
+                    this.OnNewClientCallback(client_socket, e.UserToken);
                 }
 
                 // 다음 연결을 받아들인다.
-                this.flow_control_event.Set();
+                this.FlowControlEvent.Set();
 
                 return;
             }
@@ -141,7 +148,7 @@ namespace FreeNet
             }
 
             // 다음 연결을 받아들인다.
-            this.flow_control_event.Set();
+            this.FlowControlEvent.Set();
 		}
 	}
 }

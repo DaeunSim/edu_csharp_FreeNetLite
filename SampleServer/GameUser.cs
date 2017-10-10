@@ -17,64 +17,65 @@ namespace SampleServer
 		public GameUser(UserToken token)
 		{
 			this.token = token;
-			this.token.set_peer(this);
+			this.token.SetPeer(this);
 		}
 
-		void IPeer.on_removed()
+		void IPeer.OnRemoved()
 		{
 			//Console.WriteLine("The client disconnected.");
 
-			Program.remove_user(this);
+			Program.RemoveUser(this);
 		}
 
-		public void send(Packet msg)
+		public void Send(Packet pkt)
 		{
-            msg.record_size();
-            this.token.send(new ArraySegment<byte>(msg.buffer, 0, msg.position));
+            pkt.RecordSize();
+            this.token.Send(new ArraySegment<byte>(pkt.Buffer, 0, pkt.Position));
 		}
-
-        public void send(ArraySegment<byte> data)
-        {
-            this.token.send(data);
-        }
-
-		void IPeer.disconnect()
+                
+        public void DisConnect()
 		{
-            this.token.ban();
+            this.token.Ban();
 		}
 
-		void IPeer.on_message(Packet msg)
+        public void OnMessage(Packet pkt)
 		{
             // ex)
-            PROTOCOL protocol = (PROTOCOL)msg.pop_protocol_id();
+            PROTOCOL_ID protocol = (PROTOCOL_ID)pkt.PopProtocolId();
             //Console.WriteLine("------------------------------------------------------");
             //Console.WriteLine("protocol id " + protocol);
             switch (protocol)
             {
-                case PROTOCOL.CHAT_MSG_REQ:
+                case PROTOCOL_ID.CHAT_MSG_REQ:
                     {
-                        string text = msg.pop_string();
+                        string text = pkt.PopString();
                         Console.WriteLine(string.Format("text {0}", text));
 
-                        var response = Packet.create((short)PROTOCOL.CHAT_MSG_ACK);
-                        response.push(text);
-                        send(response);
+                        var response = Packet.Create((short)PROTOCOL_ID.CHAT_MSG_ACK);
+                        response.Push(text);
+                        Send(response);
 
                         if (text.Equals("exit"))
                         {
                             // 대량의 메시지를 한꺼번에 보낸 후 종료하는 시나리오 테스트.
                             for (int i = 0; i < 1000; ++i)
                             {
-                                var dummy = Packet.create((short)PROTOCOL.CHAT_MSG_ACK);
-                                dummy.push(i.ToString());
-                                send(dummy);
+                                var dummy = Packet.Create((short)PROTOCOL_ID.CHAT_MSG_ACK);
+                                dummy.Push(i.ToString());
+                                Send(dummy);
                             }
 
-                            this.token.ban();
+                            this.token.Ban();
                         }
                     }
                     break;
             }
         }
-	}
+
+
+        void send(ArraySegment<byte> data)
+        {
+            this.token.Send(data);
+        }
+    }
 }

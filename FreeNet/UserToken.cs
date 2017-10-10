@@ -38,65 +38,67 @@ namespace FreeNet
         // close중복 처리 방지를 위한 플래그.
         // 0 = 연결된 상태.
         // 1 = 종료된 상태.
-        int is_closed;
+        int IsClosed;
 
-        State current_state;
-        public Socket socket { get; set; }
+        State CurrentState;
+        public Socket Sock { get; set; }
 
-        public SocketAsyncEventArgs receive_event_args { get; private set; }
-        public SocketAsyncEventArgs send_event_args { get; private set; }
+        public SocketAsyncEventArgs ReceiveEventArgs { get; private set; }
+        public SocketAsyncEventArgs SendEventArgs { get; private set; }
 
         // 바이트를 패킷 형식으로 해석해주는 해석기.
-        MessageResolver message_resolver;
+        MessageResolver MsgResolver;
 
         // session객체. 어플리케이션 딴에서 구현하여 사용.
-        IPeer peer;
+        IPeer Peer;
 
         // BufferList적용을 위해 queue에서 list로 변경.
-        List<ArraySegment<byte>> sending_list;
+        List<ArraySegment<byte>> SendingList;
+
         // sending_list lock처리에 사용되는 객체.
         private object cs_sending_queue;
 
-        IMessageDispatcher dispatcher;
+        IMessageDispatcher Dispatcher;
 
-        public delegate void ClosedDelegate(UserToken token);
-        public ClosedDelegate on_session_closed;
+        //public delegate void ClosedDelegate(UserToken token);
+        //public ClosedDelegate OnSessionClosed;
+        public Action<UserToken> OnSessionClosed;
 
         // heartbeat.
-        public long latest_heartbeat_time { get; private set; }
-        HeartbeatSender heartbeat_sender;
-        bool auto_heartbeat;
+        public long LatestHeartbeatTime { get; private set; }
+        HeartbeatSender HeartbeatSender;
+        bool AutoHeartbeat;
 
 
         public UserToken(IMessageDispatcher dispatcher)
         {
-            this.dispatcher = dispatcher;
-            this.cs_sending_queue = new object();
+            Dispatcher = dispatcher;
+            cs_sending_queue = new object();
 
-            this.message_resolver = new MessageResolver();
-            this.peer = null;
-            this.sending_list = new List<ArraySegment<byte>>();
-            this.latest_heartbeat_time = DateTime.Now.Ticks;
+            MsgResolver = new MessageResolver();
+            Peer = null;
+            SendingList = new List<ArraySegment<byte>>();
+            LatestHeartbeatTime = DateTime.Now.Ticks;
 
-            this.current_state = State.Idle;
+            CurrentState = State.Idle;
         }
 
-        public void on_connected()
+        public void OnConnected()
         {
-            this.current_state = State.Connected;
-            this.is_closed = 0;
-            this.auto_heartbeat = true;
+            CurrentState = State.Connected;
+            IsClosed = 0;
+            AutoHeartbeat = true;
         }
 
-        public void set_peer(IPeer peer)
+        public void SetPeer(IPeer peer)
         {
-            this.peer = peer;
+            Peer = peer;
         }
 
-        public void set_event_args(SocketAsyncEventArgs receive_event_args, SocketAsyncEventArgs send_event_args)
+        public void SetEventArgs(SocketAsyncEventArgs receive_event_args, SocketAsyncEventArgs send_event_args)
         {
-            this.receive_event_args = receive_event_args;
-            this.send_event_args = send_event_args;
+            ReceiveEventArgs = receive_event_args;
+            SendEventArgs = send_event_args;
         }
 
         /// <summary>
@@ -106,33 +108,33 @@ namespace FreeNet
         /// <param name="buffer"></param>
         /// <param name="offset"></param>
         /// <param name="transfered"></param>
-        public void on_receive(byte[] buffer, int offset, int transfered)
+        public void OnReceive(byte[] buffer, int offset, int transfered)
         {
-            this.message_resolver.on_receive(buffer, offset, transfered, on_message_completed);
+            MsgResolver.OnReceive(buffer, offset, transfered, OnMessageCompleted);
         }
 
-        void on_message_completed(ArraySegment<byte> buffer)
+        void OnMessageCompleted(ArraySegment<byte> buffer)
         {
-            if (this.peer == null)
+            if (Peer == null)
             {
                 return;
             }
 
-            if (this.dispatcher != null)
+            if (Dispatcher != null)
             {
                 // 로직 스레드의 큐를 타고 호출되도록 함.
-                this.dispatcher.on_message(this, buffer);
+                Dispatcher.OnMessage(this, buffer);
             }
             else
             {
                 // IO스레드에서 직접 호출.
                 Packet msg = new Packet(buffer, this);
-                on_message(msg);
+                OnMessage(msg);
             }
         }
 
 
-        public void on_message(Packet msg)
+        public void OnMessage(Packet msg)
         {
             // active close를 위한 코딩.
             //   서버에서 종료하라고 연락이 왔는지 체크한다.
@@ -140,7 +142,7 @@ namespace FreeNet
             switch (msg.ProtocolId)
             {
                 case SYS_CLOSE_REQ:
-                    disconnect();
+                    DisConnect();
                     return;
 
                 case SYS_START_HEARTBEAT:
@@ -149,9 +151,9 @@ namespace FreeNet
                         msg.PopProtocolId();
                         // 전송 인터벌.
                         byte interval = msg.PopByte();
-                        this.heartbeat_sender = new HeartbeatSender(this, interval);
+                        this.HeartbeatSender = new HeartbeatSender(this, interval);
 
-                        if (this.auto_heartbeat)
+                        if (this.AutoHeartbeat)
                         {
                             start_heartbeat();
                         }
@@ -160,75 +162,75 @@ namespace FreeNet
 
                 case SYS_UPDATE_HEARTBEAT:
                     //Console.WriteLine("heartbeat : " + DateTime.Now);
-                    this.latest_heartbeat_time = DateTime.Now.Ticks;
+                    this.LatestHeartbeatTime = DateTime.Now.Ticks;
                     return;
             }
 
 
-            if (this.peer != null)
+            if (this.Peer != null)
             {
                 try
                 {
                     switch (msg.ProtocolId)
                     {
                         case SYS_CLOSE_ACK:
-                            this.peer.on_removed();
+                            this.Peer.OnRemoved();
                             break;
 
                         default:
-                            this.peer.on_message(msg);
+                            this.Peer.OnMessage(msg);
                             break;
                     }
                 }
                 catch (Exception)
                 {
-                    close();
+                    Close();
                 }
             }
 
             if (msg.ProtocolId == SYS_CLOSE_ACK)
             {
-                if (this.on_session_closed != null)
+                if (this.OnSessionClosed != null)
                 {
-                    this.on_session_closed(this);
+                    this.OnSessionClosed(this);
                 }
             }
         }
 
-        public void close()
+        public void Close()
         {
             // 중복 수행을 막는다.
-            if (Interlocked.CompareExchange(ref this.is_closed, 1, 0) == 1)
+            if (Interlocked.CompareExchange(ref this.IsClosed, 1, 0) == 1)
             {
                 return;
             }
 
-            if (this.current_state == State.Closed)
+            if (this.CurrentState == State.Closed)
             {
                 // already closed.
                 return;
             }
 
-            this.current_state = State.Closed;
-            this.socket.Close();
-            this.socket = null;
+            this.CurrentState = State.Closed;
+            this.Sock.Close();
+            this.Sock = null;
 
-            this.send_event_args.UserToken = null;
-            this.receive_event_args.UserToken = null;
+            this.SendEventArgs.UserToken = null;
+            this.ReceiveEventArgs.UserToken = null;
 
-            this.sending_list.Clear();
-            this.message_resolver.clear_buffer();
+            this.SendingList.Clear();
+            this.MsgResolver.ClearBuffer();
 
-            if (this.peer != null)
+            if (this.Peer != null)
             {
                 Packet msg = Packet.Create((short)-1);
-                if (this.dispatcher != null)
+                if (this.Dispatcher != null)
                 {
-                    this.dispatcher.on_message(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+                    this.Dispatcher.OnMessage(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
                 }
                 else
                 {
-                    on_message(msg);
+                    OnMessage(msg);
                 }
             }
         }
@@ -243,13 +245,13 @@ namespace FreeNet
         ///		현재 진행중인 SendAsync가 완료되었을 때 큐를 검사하여 나머지 패킷을 전송한다.
         /// </summary>
         /// <param name="msg"></param>
-        public void send(ArraySegment<byte> data)
+        public void Send(ArraySegment<byte> data)
         {
             lock (this.cs_sending_queue)
             {
-                this.sending_list.Add(data);
+                this.SendingList.Add(data);
 
-                if (this.sending_list.Count > 1)
+                if (this.SendingList.Count > 1)
                 {
                     // 큐에 무언가가 들어 있다면 아직 이전 전송이 완료되지 않은 상태이므로 큐에 추가만 하고 리턴한다.
                     // 현재 수행중인 SendAsync가 완료된 이후에 큐를 검사하여 데이터가 있으면 SendAsync를 호출하여 전송해줄 것이다.
@@ -257,39 +259,39 @@ namespace FreeNet
                 }
             }
 
-            start_send();
+            StartSend();
         }
 
 
-        public void send(Packet msg)
+        public void Send(Packet msg)
         {
             msg.RecordSize();
-            send(new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+            Send(new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
         }
 
 
         /// <summary>
         /// 비동기 전송을 시작한다.
         /// </summary>
-        void start_send()
+        void StartSend()
         {
             try
             {
                 // 성능 향상을 위해 SetBuffer에서 BufferList를 사용하는 방식으로 변경함.
-                this.send_event_args.BufferList = this.sending_list;
+                this.SendEventArgs.BufferList = this.SendingList;
 
                 // 비동기 전송 시작.
-                bool pending = this.socket.SendAsync(this.send_event_args);
+                bool pending = this.Sock.SendAsync(this.SendEventArgs);
                 if (!pending)
                 {
-                    process_send(this.send_event_args);
+                    ProcessSend(this.SendEventArgs);
                 }
             }
             catch (Exception e)
             {
-                if (this.socket == null)
+                if (this.Sock == null)
                 {
-                    close();
+                    Close();
                     return;
                 }
 
@@ -298,13 +300,15 @@ namespace FreeNet
             }
         }
 
-        static int sent_count = 0;
+        //static int sent_count = 0;
+
         static object cs_count = new object();
+        
         /// <summary>
         /// 비동기 전송 완료시 호출되는 콜백 매소드.
         /// </summary>
         /// <param name="e"></param>
-        public void process_send(SocketAsyncEventArgs e)
+        public void ProcessSend(SocketAsyncEventArgs e)
         {
             if (e.BytesTransferred <= 0 || e.SocketError != SocketError.Success)
             {
@@ -316,28 +320,28 @@ namespace FreeNet
             lock (this.cs_sending_queue)
             {
                 // 리스트에 들어있는 데이터의 총 바이트 수.
-                var size = this.sending_list.Sum(obj => obj.Count);
+                var size = this.SendingList.Sum(obj => obj.Count);
 
                 // 전송이 완료되기 전에 추가 전송 요청을 했다면 sending_list에 무언가 더 들어있을 것이다.
                 if (e.BytesTransferred != size)
                 {
                     //todo:세그먼트 하나를 다 못보낸 경우에 대한 처리도 해줘야 함.
                     // 일단 close시킴.
-                    if (e.BytesTransferred < this.sending_list[0].Count)
+                    if (e.BytesTransferred < this.SendingList[0].Count)
                     {
                         string error = string.Format("Need to send more! transferred {0},  packet size {1}", e.BytesTransferred, size);
                         Console.WriteLine(error);
 
-                        close();
+                        Close();
                         return;
                     }
 
                     // 보낸 만큼 빼고 나머지 대기중인 데이터들을 한방에 보내버린다.
                     int sent_index = 0;
                     int sum = 0;
-                    for (int i = 0; i < this.sending_list.Count; ++i)
+                    for (int i = 0; i < this.SendingList.Count; ++i)
                     {
-                        sum += this.sending_list[i].Count;
+                        sum += this.SendingList[i].Count;
                         if (sum <= e.BytesTransferred)
                         {
                             // 여기 까지는 전송 완료된 데이터 인덱스.
@@ -348,20 +352,20 @@ namespace FreeNet
                         break;
                     }
                     // 전송 완료된것은 리스트에서 삭제한다.
-                    this.sending_list.RemoveRange(0, sent_index + 1);
+                    this.SendingList.RemoveRange(0, sent_index + 1);
 
                     // 나머지 데이터들을 한방에 보낸다.
-                    start_send();
+                    StartSend();
                     return;
                 }
 
                 // 다 보냈고 더이상 보낼것도 없다.
-                this.sending_list.Clear();
+                this.SendingList.Clear();
  
                 // 종료가 예약된 경우, 보낼건 다 보냈으니 진짜 종료 처리를 진행한다.
-                if (this.current_state == State.ReserveClosing)
+                if (this.CurrentState == State.ReserveClosing)
                 {
-                    this.socket.Shutdown(SocketShutdown.Send);
+                    this.Sock.Shutdown(SocketShutdown.Send);
                 }
             }
         }
@@ -371,23 +375,23 @@ namespace FreeNet
         /// 연결을 종료한다.
         /// 주로 클라이언트에서 종료할 때 호출한다.
         /// </summary>
-        public void disconnect()
+        public void DisConnect()
         {
             // close the socket associated with the client
             try
             {
-                if (this.sending_list.Count <= 0)
+                if (this.SendingList.Count <= 0)
                 {
-                    this.socket.Shutdown(SocketShutdown.Send);
+                    this.Sock.Shutdown(SocketShutdown.Send);
                     return;
                 }
 
-                this.current_state = State.ReserveClosing;
+                this.CurrentState = State.ReserveClosing;
             }
             // throws if client process has already closed
             catch (Exception)
             {
-                close();
+                Close();
             }
         }
 
@@ -399,7 +403,7 @@ namespace FreeNet
         /// TIME_WAIT상태를 서버에 남기지 않으려면 disconnect대신 이 매소드를 사용해서
         /// 클라이언트를 종료시켜야 한다.
         /// </summary>
-        public void ban()
+        public void Ban()
         {
             try
             {
@@ -407,7 +411,7 @@ namespace FreeNet
             }
             catch (Exception)
             {
-                close();
+                Close();
             }
         }
 
@@ -418,30 +422,30 @@ namespace FreeNet
         void byebye()
         {
             Packet bye = Packet.Create(SYS_CLOSE_REQ);
-            send(bye);
+            Send(bye);
         }
 
 
         public bool is_connected()
         {
-            return this.current_state == State.Connected;
+            return this.CurrentState == State.Connected;
         }
 
 
         public void start_heartbeat()
         {
-            if (this.heartbeat_sender != null)
+            if (this.HeartbeatSender != null)
             {
-                this.heartbeat_sender.Play();
+                this.HeartbeatSender.Play();
             }
         }
 
 
         public void stop_heartbeat()
         {
-            if (this.heartbeat_sender != null)
+            if (this.HeartbeatSender != null)
             {
-                this.heartbeat_sender.Stop();
+                this.HeartbeatSender.Stop();
             }
         }
 
@@ -449,15 +453,15 @@ namespace FreeNet
         public void disable_auto_heartbeat()
         {
             stop_heartbeat();
-            this.auto_heartbeat = false;
+            this.AutoHeartbeat = false;
         }
 
 
         public void update_heartbeat_manually(float time)
         {
-            if (this.heartbeat_sender != null)
+            if (this.HeartbeatSender != null)
             {
-                this.heartbeat_sender.Update(time);
+                this.HeartbeatSender.Update(time);
             }
         }
     }

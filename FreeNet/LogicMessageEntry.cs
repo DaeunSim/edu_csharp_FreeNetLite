@@ -11,68 +11,68 @@ namespace FreeNet
     /// </summary>
     public class LogicMessageEntry : IMessageDispatcher
     {
-        NetworkService service;
-        ILogicQueue message_queue;
-        AutoResetEvent logic_event;
+        NetworkService Service;
+        ILogicQueue MessageQueue;
+        AutoResetEvent LogicEvent;
 
 
         public LogicMessageEntry(NetworkService service)
         {
-            this.service = service;
-            this.message_queue = new DoubleBufferingQueue();
-            this.logic_event = new AutoResetEvent(false);
+            Service = service;
+            MessageQueue = new DoubleBufferingQueue();
+            LogicEvent = new AutoResetEvent(false);
         }
 
 
         /// <summary>
         /// 로직 스레드 시작.
         /// </summary>
-        public void start()
+        public void Start()
         {
-            Thread logic = new Thread(this.do_logic);
+            Thread logic = new Thread(this.DoLogic);
             logic.Start();
         }
 
 
-        void IMessageDispatcher.on_message(UserToken user, ArraySegment<byte> buffer)
+        public void OnMessage(UserToken user, ArraySegment<byte> buffer)
         {
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.
             Packet msg = new Packet(buffer, user);
-            this.message_queue.Enqueue(msg);
+            this.MessageQueue.Enqueue(msg);
 
             // 로직 스레드를 깨워 일을 시킨다.
-            this.logic_event.Set();
+            this.LogicEvent.Set();
         }
 
 
         /// <summary>
         /// 로직 스레드.
         /// </summary>
-        void do_logic()
+        void DoLogic()
         {
             while (true)
             {
                 // 패킷이 들어오면 알아서 깨워 주겠지.
-                this.logic_event.WaitOne();
+                this.LogicEvent.WaitOne();
 
                 // 메시지를 분배한다.
-                dispatch_all(this.message_queue.TakeAll());
+                DispatchAll(this.MessageQueue.TakeAll());
             }
         }
 
 
-        void dispatch_all(Queue<Packet> queue)
+        void DispatchAll(Queue<Packet> queue)
         {
             while (queue.Count > 0)
             {
                 Packet msg = queue.Dequeue();
-                if (!this.service.usermanager.is_exist(msg.Owner))
+                if (!this.Service.UserManager.IsExist(msg.Owner))
                 {
                     continue;
                 }
 
-                msg.Owner.on_message(msg);
+                msg.Owner.OnMessage(msg);
             }
         }
     }

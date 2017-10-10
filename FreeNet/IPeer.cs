@@ -18,14 +18,7 @@ namespace FreeNet
 	///	
 	/// </summary>
 	public interface IPeer
-	{
-        // 제거됨.
-        //void on_message(ArraySegment<byte> buffer);
-
-        // 제거됨.
-        //void process_user_operation(CPacket msg);
-
-
+	{        
         /// <summary>
         /// CNetworkService.initialize에서 use_logicthread를 true로 설정할 경우
         /// -> IO스레드에서 직접 호출됨.
@@ -34,19 +27,19 @@ namespace FreeNet
         /// -> 로직 스레드에서 호출됨. 로직 스레드는 싱글 스레드로 돌아감.
         /// </summary>
         /// <param name="buffer"></param>
-        void on_message(Packet msg);
+        void OnMessage(Packet pkt);
 
 
         /// <summary>
         /// 원격 연결이 끊겼을 때 호출 된다.
         /// 이 매소드가 호출된 이후부터는 데이터 전송이 불가능하다.
         /// </summary>
-        void on_removed();
+        void OnRemoved();
 
 
-		void send(Packet msg);
+        void Send(Packet pkt);
 
 
-		void disconnect();
+		void DisConnect();
     }
 }

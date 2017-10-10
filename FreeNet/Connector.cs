@@ -53,10 +53,10 @@ namespace FreeNet
 			if (e.SocketError == SocketError.Success)
 			{
 				//Console.WriteLine("Connect completd!");
-				UserToken token = new UserToken(this.RefNetworkService.logic_entry);
+				UserToken token = new UserToken(this.RefNetworkService.LogicEntry);
 
                 // 데이터 수신 준비.
-                this.RefNetworkService.on_connect_completed(this.ClientSocket, token);
+                this.RefNetworkService.OnConnectCompleted(this.ClientSocket, token);
 
 				if (this.ConnectedCallback != null)
 				{

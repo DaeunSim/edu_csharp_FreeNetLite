@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SampleServer
 {
-	public enum PROTOCOL : short
+	public enum PROTOCOL_ID : short
 	{
 		BEGIN = 0,
 

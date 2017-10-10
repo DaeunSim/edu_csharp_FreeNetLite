@@ -10,14 +10,15 @@ namespace FreeNet
 {
     public class NetworkService
     {
-		SocketAsyncEventArgsPool receive_event_args_pool;
-		SocketAsyncEventArgsPool send_event_args_pool;
+		SocketAsyncEventArgsPool ReceiveEventArgsPool;
+		SocketAsyncEventArgsPool SendEventArgsPool;
 
-		public delegate void SessionHandler(UserToken token);
-		public SessionHandler session_created_callback { get; set; }
+        //public delegate void SessionHandler(UserToken token);
+        //public SessionHandler SessionCreatedCallBack { get; set; }
+        public Action<UserToken> SessionCreatedCallBack;
 
-        public LogicMessageEntry logic_entry { get; private set; }
-        public ServerUserManager usermanager { get; private set; }
+        public LogicMessageEntry LogicEntry { get; private set; }
+        public ServerUserManager UserManager { get; private set; }
 
 
         /// <summary>
@@ -32,23 +33,24 @@ namespace FreeNet
         /// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
 		public NetworkService(bool use_logicthread = false)
 		{
-			this.session_created_callback = null;
-            this.usermanager = new ServerUserManager();
+            SessionCreatedCallBack = null;
+            UserManager = new ServerUserManager();
 
             if (use_logicthread)
             {
-                this.logic_entry = new LogicMessageEntry(this);
-                this.logic_entry.start();
+                LogicEntry = new LogicMessageEntry(this);
+                LogicEntry.Start();
             }
         }
 
 
-        public void initialize()
+        public void Initialize()
         {
             // configs.
             int max_connections = 10000;
             int buffer_size = 1024;
-            initialize(max_connections, buffer_size);
+
+            Initialize(max_connections, buffer_size);
         }
 
 		// Initializes the server by preallocating reusable buffers and 
@@ -56,15 +58,15 @@ namespace FreeNet
 		// or reused, but it is done this way to illustrate how the API can 
 		// easily be used to create reusable objects to increase server performance.
 		//
-		public void initialize(int max_connections, int buffer_size)
+		public void Initialize(int max_connections, int buffer_size)
 		{
             // receive버퍼만 할당해 놓는다.
             // send버퍼는 보낼때마다 할당하든 풀에서 얻어오든 하기 때문에.
             int pre_alloc_count = 1;
 
 			BufferManager buffer_manager = new BufferManager(max_connections * buffer_size * pre_alloc_count, buffer_size);
-			this.receive_event_args_pool = new SocketAsyncEventArgsPool(max_connections);
-			this.send_event_args_pool = new SocketAsyncEventArgsPool(max_connections);
+			ReceiveEventArgsPool = new SocketAsyncEventArgsPool();
+			SendEventArgsPool = new SocketAsyncEventArgsPool();
 
 			// Allocates one large byte buffer which all I/O operations use a piece of.  This gaurds 
 			// against memory fragmentation
@@ -84,14 +86,14 @@ namespace FreeNet
                 {
                     //Pre-allocate a set of reusable SocketAsyncEventArgs
                     arg = new SocketAsyncEventArgs();
-					arg.Completed += new EventHandler<SocketAsyncEventArgs>(receive_completed);
+					arg.Completed += new EventHandler<SocketAsyncEventArgs>(ReceiveCompleted);
 					arg.UserToken = null;
 
 					// assign a byte buffer from the buffer pool to the SocketAsyncEventArg object
 					buffer_manager.SetBuffer(arg);
 
 					// add SocketAsyncEventArg to the pool
-					this.receive_event_args_pool.Push(arg);
+					ReceiveEventArgsPool.Push(arg);
 				}
 
 
@@ -99,37 +101,37 @@ namespace FreeNet
 				{
 					//Pre-allocate a set of reusable SocketAsyncEventArgs
 					arg = new SocketAsyncEventArgs();
-					arg.Completed += new EventHandler<SocketAsyncEventArgs>(send_completed);
+					arg.Completed += new EventHandler<SocketAsyncEventArgs>(SendCompleted);
 					arg.UserToken = null;
 
                     // send버퍼는 보낼때 설정한다. SetBuffer가 아닌 BufferList를 사용.
                     arg.SetBuffer(null, 0, 0);
 
 					// add SocketAsyncEventArg to the pool
-					this.send_event_args_pool.Push(arg);
+					SendEventArgsPool.Push(arg);
 				}
 			}
         }
 
-		public void listen(string host, int port, int backlog)
+		public void Listen(string host, int port, int backlog)
 		{
 			Listener client_listener = new Listener();
-			client_listener.callback_on_newclient += on_new_client;
-			client_listener.start(host, port, backlog);
+			client_listener.OnNewClientCallback += OnNewClient;
+			client_listener.Start(host, port, backlog);
 
             // heartbeat.
             byte check_interval = 10;
-            this.usermanager.start_heartbeat_checking(check_interval, check_interval);
+            UserManager.StartHeartbeatChecking(check_interval, check_interval);
         }
 
 		/// <summary>
 		/// 원격 서버에 접속 성공 했을 때 호출됩니다.
 		/// </summary>
 		/// <param name="socket"></param>
-		public void on_connect_completed(Socket socket, UserToken token)
+		public void OnConnectCompleted(Socket socket, UserToken token)
 		{
-            token.on_session_closed += this.on_session_closed;
-            this.usermanager.add(token);
+            token.OnSessionClosed += this.OnSessionClosed;
+            UserManager.Add(token);
 
 			// SocketAsyncEventArgsPool에서 빼오지 않고 그때 그때 할당해서 사용한다.
 			// 풀은 서버에서 클라이언트와의 통신용으로만 쓰려고 만든것이기 때문이다.
@@ -137,16 +139,16 @@ namespace FreeNet
 			// 서버간 연결에서도 마찬가지이다.
 			// 풀링처리를 하려면 c->s로 가는 별도의 풀을 만들어서 써야 한다.
 			SocketAsyncEventArgs receive_event_arg = new SocketAsyncEventArgs();
-			receive_event_arg.Completed += new EventHandler<SocketAsyncEventArgs>(receive_completed);
+			receive_event_arg.Completed += new EventHandler<SocketAsyncEventArgs>(ReceiveCompleted);
 			receive_event_arg.UserToken = token;
 			receive_event_arg.SetBuffer(new byte[1024], 0, 1024);
 
 			SocketAsyncEventArgs send_event_arg = new SocketAsyncEventArgs();
-			send_event_arg.Completed += new EventHandler<SocketAsyncEventArgs>(send_completed);
+			send_event_arg.Completed += new EventHandler<SocketAsyncEventArgs>(SendCompleted);
 			send_event_arg.UserToken = token;
 			send_event_arg.SetBuffer(null, 0, 0);
 
-			begin_receive(socket, receive_event_arg, send_event_arg);
+			BeginReceive(socket, receive_event_arg, send_event_arg);
 		}
 
         /// <summary>
@@ -154,57 +156,57 @@ namespace FreeNet
         /// AcceptAsync의 콜백 매소드에서 호출되며 여러 스레드에서 동시에 호출될 수 있기 때문에 공유자원에 접근할 때는 주의해야 합니다.
         /// </summary>
         /// <param name="client_socket"></param>
-		void on_new_client(Socket client_socket, object token)
+		void OnNewClient(Socket client_socket, object token)
 		{
 			// 플에서 하나 꺼내와 사용한다.
-			SocketAsyncEventArgs receive_args = this.receive_event_args_pool.Pop();
-			SocketAsyncEventArgs send_args = this.send_event_args_pool.Pop();
+			SocketAsyncEventArgs receive_args = this.ReceiveEventArgsPool.Pop();
+			SocketAsyncEventArgs send_args = this.SendEventArgsPool.Pop();
 
             // UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
-            UserToken user_token = new UserToken(this.logic_entry);
-            user_token.on_session_closed += this.on_session_closed;
+            UserToken user_token = new UserToken(this.LogicEntry);
+            user_token.OnSessionClosed += this.OnSessionClosed;
             receive_args.UserToken = user_token;
             send_args.UserToken = user_token;
 
-            this.usermanager.add(user_token);
+            this.UserManager.Add(user_token);
 
-            user_token.on_connected();
-            if (this.session_created_callback != null)
+            user_token.OnConnected();
+            if (SessionCreatedCallBack != null)
 			{
-				this.session_created_callback(user_token);
+                SessionCreatedCallBack(user_token);
 			}
 
-			begin_receive(client_socket, receive_args, send_args);
+			BeginReceive(client_socket, receive_args, send_args);
 
             Packet msg = Packet.Create((short)UserToken.SYS_START_HEARTBEAT);
             byte send_interval = 5;
             msg.Push(send_interval);
-            user_token.send(msg);
+            user_token.Send(msg);
         }
 
-		void begin_receive(Socket socket, SocketAsyncEventArgs receive_args, SocketAsyncEventArgs send_args)
+		void BeginReceive(Socket socket, SocketAsyncEventArgs receive_args, SocketAsyncEventArgs send_args)
 		{
 			// receive_args, send_args 아무곳에서나 꺼내와도 된다. 둘다 동일한 CUserToken을 물고 있다.
 			UserToken token = receive_args.UserToken as UserToken;
-			token.set_event_args(receive_args, send_args);
+			token.SetEventArgs(receive_args, send_args);
 			// 생성된 클라이언트 소켓을 보관해 놓고 통신할 때 사용한다.
-			token.socket = socket;
+			token.Sock = socket;
 
 			bool pending = socket.ReceiveAsync(receive_args);
 			if (!pending)
 			{
-				process_receive(receive_args);
+				ProcessReceive(receive_args);
 			}
 		}
 
 		// This method is called whenever a receive or send operation is completed on a socket 
 		//
 		// <param name="e">SocketAsyncEventArg associated with the completed receive operation</param>
-		void receive_completed(object sender, SocketAsyncEventArgs e)
+		void ReceiveCompleted(object sender, SocketAsyncEventArgs e)
 		{
 			if (e.LastOperation == SocketAsyncOperation.Receive)
 			{
-				process_receive(e);
+				ProcessReceive(e);
 				return;
 			}
 
@@ -214,12 +216,12 @@ namespace FreeNet
 		// This method is called whenever a receive or send operation is completed on a socket 
 		//
 		// <param name="e">SocketAsyncEventArg associated with the completed send operation</param>
-		void send_completed(object sender, SocketAsyncEventArgs e)
+		void SendCompleted(object sender, SocketAsyncEventArgs e)
 		{
             try
             {
                 UserToken token = e.UserToken as UserToken;
-                token.process_send(e);
+                token.ProcessSend(e);
             }
             catch (Exception)
             {
@@ -229,26 +231,26 @@ namespace FreeNet
 		// This method is invoked when an asynchronous receive operation completes. 
 		// If the remote host closed the connection, then the socket is closed.  
 		//
-		private void process_receive(SocketAsyncEventArgs e)
+		private void ProcessReceive(SocketAsyncEventArgs e)
 		{
             UserToken token = e.UserToken as UserToken;
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
-                token.on_receive(e.Buffer, e.Offset, e.BytesTransferred);
+                token.OnReceive(e.Buffer, e.Offset, e.BytesTransferred);
 
                 // Keep receive.
-                bool pending = token.socket.ReceiveAsync(e);
+                bool pending = token.Sock.ReceiveAsync(e);
                 if (!pending)
                 {
                     // Oh! stack overflow??
-                    process_receive(e);
+                    ProcessReceive(e);
                 }
             }
             else
             {
                 try
                 {
-                    token.close();
+                    token.Close();
                 }
                 catch (Exception)
                 {
@@ -257,24 +259,24 @@ namespace FreeNet
             }
 		}
 
-        void on_session_closed(UserToken token)
+        void OnSessionClosed(UserToken token)
         {
-            this.usermanager.remove(token);
+            UserManager.Remove(token);
 
             // Free the SocketAsyncEventArg so they can be reused by another client
             // 버퍼는 반환할 필요가 없다. SocketAsyncEventArg가 버퍼를 물고 있기 때문에
             // 이것을 재사용 할 때 물고 있는 버퍼를 그대로 사용하면 되기 때문이다.
-            if (this.receive_event_args_pool != null)
+            if (ReceiveEventArgsPool != null)
             {
-                this.receive_event_args_pool.Push(token.receive_event_args);
+                ReceiveEventArgsPool.Push(token.ReceiveEventArgs);
             }
 
-            if (this.send_event_args_pool != null)
+            if (SendEventArgsPool != null)
             {
-                this.send_event_args_pool.Push(token.send_event_args);
+                SendEventArgsPool.Push(token.SendEventArgs);
             }
 
-            token.set_event_args(null, null);
+            token.SetEventArgs(null, null);
         }
     }
 }

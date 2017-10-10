@@ -11,43 +11,43 @@ namespace FreeNet
     public class PacketBufferManager
 	{
 		static object cs_buffer = new object();
-		static Stack<Packet> pool;
-		static int pool_capacity;
+		static Stack<Packet> Pool;
+		static int PoolCapacity;
 
 		public static void initialize(int capacity)
 		{
-			pool = new Stack<Packet>();
-			pool_capacity = capacity;
-			allocate();
+			Pool = new Stack<Packet>();
+			PoolCapacity = capacity;
+			Allocate();
 		}
 
-		static void allocate()
+		static void Allocate()
 		{
-			for (int i = 0; i < pool_capacity; ++i)
+			for (int i = 0; i < PoolCapacity; ++i)
 			{
-				pool.Push(new Packet());
+				Pool.Push(new Packet());
 			}
 		}
 
-		public static Packet pop()
+		public static Packet Pop()
 		{
 			lock (cs_buffer)
 			{
-				if (pool.Count <= 0)
+				if (Pool.Count <= 0)
 				{
 					Console.WriteLine("reallocate.");
-					allocate();
+					Allocate();
 				}
 
-				return pool.Pop();
+				return Pool.Pop();
 			}
 		}
 
-		public static void push(Packet packet)
+		public static void Push(Packet packet)
 		{
 			lock(cs_buffer)
 			{
-				pool.Push(packet);
+				Pool.Push(packet);
 			}
 		}
 	}
