@@ -13,26 +13,25 @@ namespace FreeNet
 	/// </summary>
 	public class Connector
 	{
-		//public delegate void ConnectedHandler(UserToken token);
-		//public ConnectedHandler connected_callback { get; set; }
-        public Action<UserToken> ConnectedCallback;
+		public Action<UserToken> ConnectedCallback = null;
 
 		// 원격지 서버와의 연결을 위한 소켓.
 		Socket ClientSocket;
 
 		NetworkService RefNetworkService;
 
+
 		public Connector(NetworkService networkService)
 		{
 			RefNetworkService = networkService;
-			ConnectedCallback = null;
 		}
 
-		public void Connect(IPEndPoint remoteEndpoint)
+		public void Connect(IPEndPoint remoteEndpoint, SocketOption socketOption)
 		{
 			ClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            // TODO: 인자로 선택할 수 있도록 하기
-            ClientSocket.NoDelay = true;
+			
+			// TODO: 인자로 선택할 수 있도록 하기
+			ClientSocket.NoDelay = socketOption.NoDelay;
 
 			// 비동기 접속을 위한 event args.
 			SocketAsyncEventArgs event_arg = new SocketAsyncEventArgs();
@@ -40,7 +39,7 @@ namespace FreeNet
 			event_arg.RemoteEndPoint = remoteEndpoint;
 
 
-            bool pending = ClientSocket.ConnectAsync(event_arg);
+			bool pending = ClientSocket.ConnectAsync(event_arg);
 
 			if (pending == false)
 			{
@@ -55,8 +54,8 @@ namespace FreeNet
 				//Console.WriteLine("Connect completd!");
 				UserToken token = new UserToken(this.RefNetworkService.LogicEntry);
 
-                // 데이터 수신 준비.
-                this.RefNetworkService.OnConnectCompleted(this.ClientSocket, token);
+				// 데이터 수신 준비.
+				this.RefNetworkService.OnConnectCompleted(this.ClientSocket, token);
 
 				if (this.ConnectedCallback != null)
 				{
@@ -65,7 +64,7 @@ namespace FreeNet
 			}
 			else
 			{
-                //TODO: 로그로 남기기
+				//TODO: 로그로 남기기
 				// failed.
 				Console.WriteLine(string.Format("Failed to connect. {0}", e.SocketError));
 			}
