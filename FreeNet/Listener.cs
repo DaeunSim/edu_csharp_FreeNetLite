@@ -8,7 +8,8 @@ using System.Threading;
 
 namespace FreeNet
 {
-	// 이것과 별개 혹은 메소드를 추가하여 PostAccept 기능을 추가한다.
+	//TODO: 이것과 별개 혹은 메소드를 추가하여 PostAccept 기능을 추가한다.
+
 	class Listener
 	{
 		// 비동기 Accept를 위한 EventArgs.

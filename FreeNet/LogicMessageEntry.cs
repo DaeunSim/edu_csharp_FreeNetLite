@@ -11,16 +11,14 @@ namespace FreeNet
     /// </summary>
     public class LogicMessageEntry : IMessageDispatcher
     {
-        NetworkService Service;
-        ILogicQueue MessageQueue;
-        AutoResetEvent LogicEvent;
+        NetworkService RefService;
+        ILogicQueue MessageQueue = new DoubleBufferingQueue();
+        AutoResetEvent LogicEvent = new AutoResetEvent(false);
 
 
         public LogicMessageEntry(NetworkService service)
         {
-            Service = service;
-            MessageQueue = new DoubleBufferingQueue();
-            LogicEvent = new AutoResetEvent(false);
+            RefService = service;
         }
 
 
@@ -29,7 +27,7 @@ namespace FreeNet
         /// </summary>
         public void Start()
         {
-            Thread logic = new Thread(this.DoLogic);
+            Thread logic = new Thread(DoLogic);
             logic.Start();
         }
 
@@ -39,10 +37,14 @@ namespace FreeNet
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.
             Packet msg = new Packet(buffer, user);
-            this.MessageQueue.Enqueue(msg);
+            MessageQueue.Enqueue(msg);
+
+            //TODO: 패킷이 하나라도 받으면 그때마다 이 메소드가 호출된다. 너무 빈번하게 이벤트를 끄고 켜는 것 같다.
+            // 이벤트를 없애고 스레드를 아무일 없으면 1밀리세컨드 단위로 호출 시키는 것이 좋을 듯 하다.
+            // DoLogic에서는 DispatchAll 호출 후 가져온 패킷이 없으면 1ms 대기하고, 있으면 처리한다.
 
             // 로직 스레드를 깨워 일을 시킨다.
-            this.LogicEvent.Set();
+            LogicEvent.Set();
         }
 
 
@@ -51,13 +53,14 @@ namespace FreeNet
         /// </summary>
         void DoLogic()
         {
+            // 반복문을 빠져나오도록 true 대신 bool 변수 사용하기
             while (true)
             {
                 // 패킷이 들어오면 알아서 깨워 주겠지.
-                this.LogicEvent.WaitOne();
+                LogicEvent.WaitOne();
 
                 // 메시지를 분배한다.
-                DispatchAll(this.MessageQueue.TakeAll());
+                DispatchAll(MessageQueue.TakeAll());
             }
         }
 
@@ -66,9 +69,9 @@ namespace FreeNet
         {
             while (queue.Count > 0)
             {
-                Packet msg = queue.Dequeue();
-                if (!this.Service.UserManager.IsExist(msg.Owner))
-                {
+                var msg = queue.Dequeue();
+
+                if (!RefService.UserManager.IsExist(msg.Owner)) {
                     continue;
                 }
 
