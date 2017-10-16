@@ -11,7 +11,7 @@ namespace FreeNet
 	/// Endpoint정보를 받아서 서버에 접속한다.
 	/// 접속하려는 서버 하나당 인스턴스 한개씩 생성하여 사용하면 된다.
 	/// </summary>
-	public class Connector
+	public class TCPConnector
 	{
 		public Action<UserToken> ConnectedCallback = null;
 
@@ -21,7 +21,7 @@ namespace FreeNet
 		NetworkService RefNetworkService;
 
 
-		public Connector(NetworkService networkService)
+		public TCPConnector(NetworkService networkService)
 		{
 			RefNetworkService = networkService;
 		}
