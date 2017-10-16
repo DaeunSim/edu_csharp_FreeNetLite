@@ -13,10 +13,13 @@ namespace SampleServer
 
 			// 콜백 매소드 설정.
 			service.SessionCreatedCallBack += OnSessionCreated;
-			
+
+			var socketOpt = new FreeNet.SocketOption();
+			socketOpt.NoDelay = true;
+
 			// 초기화.
 			service.Initialize(10000, 1024);
-			service.Listen("0.0.0.0", 7979, 100);
+			service.Listen("0.0.0.0", 7979, 100, socketOpt);
 			
 			Console.WriteLine("Started!");
 

@@ -17,16 +17,19 @@ namespace FreeNet
 
         int TotalBufferSize;                 // the total number of bytes controlled by the buffer pool
         byte[] Buffer;                // the underlying byte array maintained by the Buffer Manager
-        //Stack<int> FreeIndexPool;   // 사용하지 않음 
         int CurrentIndex;
         int BufferSizeBySocketAsyncEventArgs;
 
         public BufferManager(int totalBytes, int bufferSize)
         {
+            if((totalBytes % bufferSize) != 0)
+            {
+                throw new System.ArgumentException("P(totalBytes % bufferSize) != 0", "bufferSize");
+            }
+
             TotalBufferSize = totalBytes;
             CurrentIndex = 0;
             BufferSizeBySocketAsyncEventArgs = bufferSize;
-            //FreeIndexPool = new Stack<int>();
         }
 
         /// <summary>
@@ -54,7 +57,11 @@ namespace FreeNet
             
             return true;
         }
+
+
+
         // 사용하지 않음
+        //Stack<int> FreeIndexPool = new Stack<int>(); 
         //public bool SetBuffer(SocketAsyncEventArgs args)
         //{
         //    if (FreeIndexPool.Count > 0)

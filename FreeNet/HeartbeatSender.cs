@@ -9,17 +9,19 @@ namespace FreeNet
     class HeartbeatSender
     {
         UserToken Remote;
+
         Timer TimerHeartBeat;
-        uint Interval;
+        UInt32 IntervalSecondTime;
 
-        float elapsed_time;
+        Int32 ElapsedSecondime;
 
 
-        public HeartbeatSender(UserToken remote, uint interval)
+        public HeartbeatSender(UserToken remote, UInt32 intervalSecondTime)
         {
             Remote = remote;
-            Interval = interval;
-            TimerHeartBeat = new Timer(this.OnTimer, null, Timeout.Infinite, Interval * 1000);
+
+            IntervalSecondTime = intervalSecondTime;
+            TimerHeartBeat = new Timer(OnTimer, null, Timeout.Infinite, IntervalSecondTime * 1000);
         }
 
 
@@ -31,35 +33,35 @@ namespace FreeNet
 
         void Send()
         {
-            Packet msg = Packet.Create((short)UserToken.SYS_UPDATE_HEARTBEAT);
-            this.Remote.Send(msg);
+            var msg = Packet.Create((short)UserToken.SYS_UPDATE_HEARTBEAT);
+            Remote.Send(msg);
         }
 
 
-        public void Update(float time)
+        public void Update(int secondTime)
         {
-            this.elapsed_time += time;
-            if (this.elapsed_time < this.Interval)
-            {
+            ElapsedSecondime += secondTime;
+
+            if (ElapsedSecondime < IntervalSecondTime) {
                 return;
             }
 
-            this.elapsed_time = 0.0f;
+            ElapsedSecondime = 0;
             Send();
         }
 
 
         public void Stop()
         {
-            this.elapsed_time = 0;
-            this.TimerHeartBeat.Change(Timeout.Infinite, Timeout.Infinite);
+            ElapsedSecondime = 0;
+            TimerHeartBeat.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
 
         public void Play()
         {
-            this.elapsed_time = 0;
-            this.TimerHeartBeat.Change(0, this.Interval * 1000);
+            ElapsedSecondime = 0;
+            TimerHeartBeat.Change(0, IntervalSecondTime * 1000);
         }
     }
 }

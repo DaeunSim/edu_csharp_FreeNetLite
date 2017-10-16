@@ -457,11 +457,11 @@ namespace FreeNet
         }
 
 
-        public void update_heartbeat_manually(float time)
+        public void update_heartbeat_manually(Int32 secondTime)
         {
             if (this.HeartbeatSender != null)
             {
-                this.HeartbeatSender.Update(time);
+                this.HeartbeatSender.Update(secondTime);
             }
         }
     }

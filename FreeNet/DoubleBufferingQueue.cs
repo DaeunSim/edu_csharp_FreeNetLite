@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace FreeNet
 {
@@ -21,19 +22,15 @@ namespace FreeNet
         Queue<Packet> RefInput;
         Queue<Packet> RefOutput;
 
-        //TODO: SpinLock 사용으로 바꾼다
-        object cs_write;
-
+        SpinLock LOCK = new SpinLock();
 
         public DoubleBufferingQueue()
         {
             // 초기 세팅은 큐와 참조가 1:1로 매칭되게 설정한다.
-            this.Queue1 = new Queue<Packet>();
-            this.Queue2 = new Queue<Packet>();
-            this.RefInput = this.Queue1;
-            this.RefOutput = this.Queue2;
-
-            this.cs_write = new object();
+            Queue1 = new Queue<Packet>();
+            Queue2 = new Queue<Packet>();
+            RefInput = Queue1;
+            RefOutput = Queue2;
         }
 
 
@@ -43,17 +40,27 @@ namespace FreeNet
         /// <param name="msg"></param>
         public void Enqueue(Packet msg)
         {
-            lock (this.cs_write)
+            var gotLock = false;
+            try
             {
-                this.RefInput.Enqueue(msg);
+                LOCK.Enter(ref gotLock);
+                RefInput.Enqueue(msg);
             }
+            finally
+            {
+                // Only give up the lock if you actually acquired it
+                if (gotLock)
+                {
+                    LOCK.Exit();
+                }
+            }           
         }
 
 
         public Queue<Packet> TakeAll()
         {
             swap();
-            return this.RefOutput;
+            return RefOutput;
         }
 
 
@@ -62,11 +69,22 @@ namespace FreeNet
         /// </summary>
         void swap()
         {
-            lock (this.cs_write)
+            var gotLock = false;
+            try
             {
-                Queue<Packet> temp = this.RefInput;
-                this.RefInput = this.RefOutput;
-                this.RefOutput = temp;
+                LOCK.Enter(ref gotLock);
+
+                var temp = RefInput;
+                RefInput = RefOutput;
+                RefOutput = temp;
+            }
+            finally
+            {
+                // Only give up the lock if you actually acquired it
+                if (gotLock)
+                {
+                    LOCK.Exit();
+                }
             }
         }
     }
