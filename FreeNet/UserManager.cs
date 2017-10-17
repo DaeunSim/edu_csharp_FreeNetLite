@@ -1,7 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace FreeNet
@@ -14,6 +13,7 @@ namespace FreeNet
         //TODO: ConcureentDictionary를 사용한다. 그런데 foreach에서 스레드 세이프한지 테스트 하자. 스택오버플로어에서는 스레드 세이프하다고 한다.
         object cs_user;
         List<UserToken> Users;
+        //ConcurrentDictionary users = new ConcurrentDictionary<UserToken>();
 
         Timer TimerHeartbeat;
         long HeartbeatDuration;
