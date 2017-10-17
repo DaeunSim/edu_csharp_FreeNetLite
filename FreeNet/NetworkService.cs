@@ -13,12 +13,10 @@ namespace FreeNet
 		SocketAsyncEventArgsPool ReceiveEventArgsPool;
 		SocketAsyncEventArgsPool SendEventArgsPool;
 
-		//public delegate void SessionHandler(UserToken token);
-		//public SessionHandler SessionCreatedCallBack { get; set; }
 		public Action<UserToken> SessionCreatedCallBack;
 
 		public LogicMessageEntry LogicEntry { get; private set; }
-		public ServerUserManager UserManager { get; private set; }
+		public UserManager UserManager { get; private set; }
 
 
 		/// <summary>
@@ -34,7 +32,7 @@ namespace FreeNet
 		public NetworkService(bool use_logicthread = false)
 		{
 			SessionCreatedCallBack = null;
-			UserManager = new ServerUserManager();
+			UserManager = new UserManager();
 
 			if (use_logicthread)
 			{

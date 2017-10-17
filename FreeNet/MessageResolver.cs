@@ -5,13 +5,13 @@ using System.Text;
 
 namespace FreeNet
 {
-	class Defines
+	struct Defines
 	{
 		public static readonly short HEADERSIZE = 4;
 	}
 
-	//public delegate void CompletedMessageCallback(ArraySegment<byte> buffer);
-
+	
+	//TODO: 이 클래스의 부모가 될 인터페이스를 만들어서 다양한 패킷 구조를 지원하도록 한다.
 	/// <summary>
 	/// [header][body] 구조를 갖는 데이터를 파싱하는 클래스.
 	/// - header : 데이터 사이즈. Defines.HEADERSIZE에 정의된 타입만큼의 크기를 갖는다.
@@ -22,28 +22,24 @@ namespace FreeNet
 	class MessageResolver
 	{
 		// 메시지 사이즈.
-		int MessageSize;
+		int MessageSize = 0;
 
+		// TODO: 버퍼 크기를 옵션으로 정할 수 있게한다.
 		// 진행중인 버퍼.
 		byte[] MessageBuffer = new byte[1024];
 
 		// 현재 진행중인 버퍼의 인덱스를 가리키는 변수.
 		// 패킷 하나를 완성한 뒤에는 0으로 초기화 시켜줘야 한다.
-		int CurrentPosition;
+		int CurrentPosition = 0;
 
 		// 읽어와야 할 목표 위치.
-		int PositionToRead;
+		int PositionToRead = 0;
 
 		// 남은 사이즈.
-		int RemainBytes;
+		int RemainBytes = 0;
 
-		public MessageResolver()
-		{
-			MessageSize = 0;
-			CurrentPosition = 0;
-			PositionToRead = 0;
-			RemainBytes = 0;
-		}
+
+		public MessageResolver() { }
 
 		/// <summary>
 		/// 목표지점으로 설정된 위치까지의 바이트를 원본 버퍼로부터 복사한다.
@@ -52,32 +48,32 @@ namespace FreeNet
 		/// <param name="buffer"></param>
 		/// <param name="size_to_read"></param>
 		/// <returns>다 읽었으면 true, 데이터가 모자라서 못 읽었으면 false를 리턴한다.</returns>
-		bool ReadUntil(byte[] buffer, ref int src_position)
+		bool ReadUntil(byte[] buffer, ref int srPosition)
 		{
 			// 읽어와야 할 바이트.
 			// 데이터가 분리되어 올 경우 이전에 읽어놓은 값을 빼줘서 부족한 만큼 읽어올 수 있도록 계산해 준다.
-			int copy_size = this.PositionToRead - this.CurrentPosition;
+			var copySize = PositionToRead - CurrentPosition;
 
 			// 앗! 남은 데이터가 더 적다면 가능한 만큼만 복사한다.
-			if (this.RemainBytes < copy_size)
+			if (RemainBytes < copySize)
 			{
-				copy_size = this.RemainBytes;
+				copySize = RemainBytes;
 			}
 
 			// 버퍼에 복사.
-			Array.Copy(buffer, src_position, this.MessageBuffer, this.CurrentPosition, copy_size);
+			Array.Copy(buffer, srPosition, MessageBuffer, CurrentPosition, copySize);
 
 			// 원본 버퍼 포지션 이동.
-			src_position += copy_size;
+			srPosition += copySize;
 
 			// 타겟 버퍼 포지션도 이동.
-			this.CurrentPosition += copy_size;
+			CurrentPosition += copySize;
 
 			// 남은 바이트 수.
-			this.RemainBytes -= copy_size;
+			RemainBytes -= copySize;
 
 			// 목표지점에 도달 못했으면 false
-			if (this.CurrentPosition < this.PositionToRead)
+			if (CurrentPosition < PositionToRead)
 			{
 				return false;
 			}
@@ -96,22 +92,22 @@ namespace FreeNet
 		public void OnReceive(byte[] buffer, int offset, int transffered, Action<ArraySegment<byte>> callback)
 		{
 			// 이번 receive로 읽어오게 될 바이트 수.
-			this.RemainBytes = transffered;
+			RemainBytes = transffered;
 
 			// 원본 버퍼의 포지션값.
 			// 패킷이 여러개 뭉쳐 올 경우 원본 버퍼의 포지션은 계속 앞으로 가야 하는데 그 처리를 위한 변수이다.
-			int src_position = offset;
+			var src_position = offset;
 
 			// 남은 데이터가 있다면 계속 반복한다.
-			while (this.RemainBytes > 0)
+			while (RemainBytes > 0)
 			{
-				bool completed = false;
+				var completed = false;
 
 				// 헤더만큼 못읽은 경우 헤더를 먼저 읽는다.
-				if (this.CurrentPosition < Defines.HEADERSIZE)
+				if (CurrentPosition < Defines.HEADERSIZE)
 				{
 					// 목표 지점 설정(헤더 위치까지 도달하도록 설정).
-					this.PositionToRead = Defines.HEADERSIZE;
+					PositionToRead = Defines.HEADERSIZE;
 
 					completed = ReadUntil(buffer, ref src_position);
 					if (!completed)
@@ -121,22 +117,22 @@ namespace FreeNet
 					}
 
 					// 헤더 하나를 온전히 읽어왔으므로 메시지 사이즈를 구한다.
-					this.MessageSize = GetTotalMessageSize();
+					MessageSize = GetTotalMessageSize();
 
 					// 메시지 사이즈가 0이하라면 잘못된 패킷으로 처리한다.
 					// It was wrong message if size less than zero.
-					if (this.MessageSize <= 0)
+					if (MessageSize <= 0)
 					{
 						ClearBuffer();
 						return;
 					}
 
 					// 다음 목표 지점.
-					this.PositionToRead = this.MessageSize;
+					PositionToRead = MessageSize;
 
 					// 헤더를 다 읽었는데 더이상 가져올 데이터가 없다면 다음 receive를 기다린다.
 					// (예를들어 데이터가 조각나서 헤더만 오고 메시지는 다음번에 올 경우)
-					if (this.RemainBytes <= 0)
+					if (RemainBytes <= 0)
 					{
 						return;
 					}
@@ -148,10 +144,10 @@ namespace FreeNet
 				if (completed)
 				{
 					// 패킷 하나를 완성 했다.
-					byte[] clone = new byte[this.PositionToRead];
-					Array.Copy(this.MessageBuffer, clone, this.PositionToRead);
+					var clone = new byte[this.PositionToRead];
+					Array.Copy(this.MessageBuffer, clone, PositionToRead);
 					ClearBuffer();
-					callback(new ArraySegment<byte>(clone, 0, this.PositionToRead));
+					callback(new ArraySegment<byte>(clone, 0, PositionToRead));
 				}
 			}
 		}
@@ -165,11 +161,11 @@ namespace FreeNet
 		{
 			if (Defines.HEADERSIZE == 2)
 			{
-				return BitConverter.ToInt16(this.MessageBuffer, 0);
+				return BitConverter.ToInt16(MessageBuffer, 0);
 			}
 			else if (Defines.HEADERSIZE == 4)
 			{
-				return BitConverter.ToInt32(this.MessageBuffer, 0);
+				return BitConverter.ToInt32(MessageBuffer, 0);
 			}
 
 			return 0;
@@ -177,10 +173,10 @@ namespace FreeNet
 
 		public void ClearBuffer()
 		{
-			Array.Clear(this.MessageBuffer, 0, this.MessageBuffer.Length);
+			Array.Clear(MessageBuffer, 0, MessageBuffer.Length);
 
-			this.CurrentPosition = 0;
-			this.MessageSize = 0;
+			CurrentPosition = 0;
+			MessageSize = 0;
 
 		}
 	}
