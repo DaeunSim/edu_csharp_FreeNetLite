@@ -8,7 +8,7 @@ namespace FreeNet
     /// <summary>
     /// 현재 접속중인 전체 유저를 관리하는 클래스.
     /// </summary>
-    public class UserManager
+    public class UserTokenManager
     {
         //TODO: ConcureentDictionary를 사용한다. 그런데 foreach에서 스레드 세이프한지 테스트 하자. 스택오버플로어에서는 스레드 세이프하다고 한다.
         object cs_user;
@@ -19,7 +19,7 @@ namespace FreeNet
         long HeartbeatDuration;
 
 
-        public UserManager()
+        public UserTokenManager()
         {
             cs_user = new object();
             Users = new List<UserToken>();

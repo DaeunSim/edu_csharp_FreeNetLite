@@ -16,7 +16,7 @@ namespace FreeNet
 		public Action<UserToken> SessionCreatedCallBack;
 
 		public LogicMessageEntry LogicEntry { get; private set; }
-		public UserManager UserManager { get; private set; }
+		public UserTokenManager UserManager { get; private set; }
 
 
 		/// <summary>
@@ -32,7 +32,7 @@ namespace FreeNet
 		public NetworkService(bool use_logicthread = false)
 		{
 			SessionCreatedCallBack = null;
-			UserManager = new UserManager();
+			UserManager = new UserTokenManager();
 
 			if (use_logicthread)
 			{
