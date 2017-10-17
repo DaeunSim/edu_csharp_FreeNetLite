@@ -13,16 +13,16 @@ namespace FreeNet
 		public UserToken Owner { get; private set; }
 		public byte[] Buffer { get; private set; }
 		public int Position { get; private set; }
-        public int Size { get; private set; }
+		public int Size { get; private set; }
 
 		public Int16 ProtocolId { get; private set; }
 
 		public static Packet Create(Int16 protocol_id)
 		{
 			Packet packet = new Packet();
-            //todo:다음 리팩토링 대상은 바로 여기다. CPacketBufferManager!!!
-            //CPacket packet = CPacketBufferManager.pop();
-            packet.SetProtocol(protocol_id);
+			//todo:다음 리팩토링 대상은 바로 여기다. CPacketBufferManager!!!
+			//CPacket packet = CPacketBufferManager.pop();
+			packet.SetProtocol(protocol_id);
 			return packet;
 		}
 
@@ -31,24 +31,24 @@ namespace FreeNet
 			//CPacketBufferManager.push(packet);
 		}
 
-        public Packet(ArraySegment<byte> buffer, UserToken owner)
-        {
-            // 참조로만 보관하여 작업한다.
-            // 복사가 필요하면 별도로 구현해야 한다.
-            Buffer = buffer.Array;
+		public Packet(ArraySegment<byte> buffer, UserToken owner)
+		{
+			// 참조로만 보관하여 작업한다.
+			// 복사가 필요하면 별도로 구현해야 한다.
+			Buffer = buffer.Array;
 
-            // 헤더는 읽을필요 없으니 그 이후부터 시작한다.
-            Position = Defines.HEADERSIZE;
-            Size = buffer.Count;
+			// 헤더는 읽을필요 없으니 그 이후부터 시작한다.
+			Position = Defines.HEADERSIZE;
+			Size = buffer.Count;
 
-            // 프로토콜 아이디만 확인할 경우도 있으므로 미리 뽑아놓는다.
-            ProtocolId = PopProtocolId();
-            Position = Defines.HEADERSIZE;
+			// 프로토콜 아이디만 확인할 경우도 있으므로 미리 뽑아놓는다.
+			ProtocolId = PopProtocolId();
+			Position = Defines.HEADERSIZE;
 
-            Owner = owner;
-        }
+			Owner = owner;
+		}
 
-        public Packet(byte[] buffer, UserToken owner)
+		public Packet(byte[] buffer, UserToken owner)
 		{
 			// 참조로만 보관하여 작업한다.
 			// 복사가 필요하면 별도로 구현해야 한다.
@@ -84,8 +84,8 @@ namespace FreeNet
 
 		public byte PopByte()
 		{
-            byte data = this.Buffer[this.Position];
-            this.Position += sizeof(byte);
+			byte data = this.Buffer[this.Position];
+			this.Position += sizeof(byte);
 			return data;
 		}
 
@@ -116,12 +116,12 @@ namespace FreeNet
 			return data;
 		}
 
-        public float PopFloat()
-        {
-            float data = BitConverter.ToSingle(this.Buffer, this.Position);
-            this.Position += sizeof(float);
-            return data;
-        }
+		public float PopFloat()
+		{
+			float data = BitConverter.ToSingle(this.Buffer, this.Position);
+			this.Position += sizeof(float);
+			return data;
+		}
 
 
 
@@ -138,8 +138,8 @@ namespace FreeNet
 
 		public void RecordSize()
 		{
-            // header + body 를 합한 사이즈를 입력한다.
-            byte[] header = BitConverter.GetBytes(this.Position);
+			// header + body 를 합한 사이즈를 입력한다.
+			byte[] header = BitConverter.GetBytes(this.Position);
 			header.CopyTo(this.Buffer, 0);
 		}
 
@@ -184,11 +184,11 @@ namespace FreeNet
 			Position += temp_buffer.Length;
 		}
 
-        public void Push(float data)
-        {
-            byte[] temp_buffer = BitConverter.GetBytes(data);
-            temp_buffer.CopyTo(this.Buffer, this.Position);
-            Position += temp_buffer.Length;
-        }
+		public void Push(float data)
+		{
+			byte[] temp_buffer = BitConverter.GetBytes(data);
+			temp_buffer.CopyTo(this.Buffer, this.Position);
+			Position += temp_buffer.Length;
+		}
 	}
 }

@@ -7,6 +7,7 @@ using System.Net.Sockets;
 
 namespace FreeNet
 {
+    //TODO: 서버-서버 접속용으로 변경한다.
 	/// <summary>
 	/// Endpoint정보를 받아서 서버에 접속한다.
 	/// 접속하려는 서버 하나당 인스턴스 한개씩 생성하여 사용하면 된다.
@@ -51,15 +52,15 @@ namespace FreeNet
 		{
 			if (e.SocketError == SocketError.Success)
 			{
-				//Console.WriteLine("Connect completd!");
-				UserToken token = new UserToken(this.RefNetworkService.LogicEntry);
+                //TODO:임시로 빌드 되게 수정했다
+				UserToken token = new UserToken(1, RefNetworkService.LogicEntry);
 
 				// 데이터 수신 준비.
-				this.RefNetworkService.OnConnectCompleted(this.ClientSocket, token);
+				RefNetworkService.OnConnectCompleted(ClientSocket, token);
 
-				if (this.ConnectedCallback != null)
+				if (ConnectedCallback != null)
 				{
-					this.ConnectedCallback(token);
+					ConnectedCallback(token);
 				}
 			}
 			else

@@ -18,7 +18,11 @@ namespace SampleServer
 			socketOpt.NoDelay = true;
 
 			// 초기화.
-			service.Initialize(10000, 1024);
+			var serverOpt = new FreeNet.ServerOption();
+			serverOpt.MaxConnectionCount = 10000;
+			serverOpt.ReceiveBufferSize = 1024;
+
+			service.Initialize(serverOpt);
 			service.Listen("0.0.0.0", 7979, 100, socketOpt);
 			
 			Console.WriteLine("Started!");

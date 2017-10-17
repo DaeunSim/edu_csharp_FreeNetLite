@@ -10,20 +10,19 @@ namespace FreeNet
     /// </summary>
     public class UserTokenManager
     {
-        //TODO: ConcureentDictionary를 사용한다. 그런데 foreach에서 스레드 세이프한지 테스트 하자. 스택오버플로어에서는 스레드 세이프하다고 한다.
-        object cs_user;
-        List<UserToken> Users;
-        //ConcurrentDictionary users = new ConcurrentDictionary<UserToken>();
+        // ConcureentDictionary를 사용한다. 그런데 foreach에서 스레드 세이프한지 테스트 하자. 
+        // 스택오버플로어에서는 스레드 세이프하다고 한다.
+
+        // 현재 Users에 추가된 유저 수. ConcurrentDictionary의 Count를 사용하면 일일이 계산하므로 따로 변수로 계산해 놓는다.
+        Int64 CurrentCount;
+
+        ConcurrentDictionary<Int64, UserToken> Users = new ConcurrentDictionary<Int64, UserToken>();
 
         Timer TimerHeartbeat;
         long HeartbeatDuration;
 
 
-        public UserTokenManager()
-        {
-            cs_user = new object();
-            Users = new List<UserToken>();
-        }
+        public UserTokenManager() { }
 
 
         public void StartHeartbeatChecking(uint check_interval_sec, uint allow_duration_sec)
@@ -35,34 +34,34 @@ namespace FreeNet
 
         public void Add(UserToken user)
         {
-            lock (cs_user)
+           if( Users.TryAdd(user.UniqueId, user))
             {
-                Users.Add(user);
+                Interlocked.Increment(ref CurrentCount);
             }
         }
 
 
         public void Remove(UserToken user)
         {
-            lock (this.cs_user)
+            var uniqueId = user.UniqueId;
+
+            if(Users.TryRemove(uniqueId, out var temp))
             {
-                Users.Remove(user);
+                Interlocked.Decrement(ref CurrentCount);
             }
         }
 
 
         public bool IsExist(UserToken user)
         {
-            lock (this.cs_user)
-            {
-                return this.Users.Exists(obj => obj == user);
-            }
+            return Users.ContainsKey(user.UniqueId);
         }
 
 
-        public int GetTotalCount()
+        public Int64 GetTotalCount()
         {
-            return this.Users.Count;
+            Interlocked.Read(ref CurrentCount);
+            return CurrentCount;
         }
 
 
@@ -70,19 +69,17 @@ namespace FreeNet
         {
             long allowed_time = DateTime.Now.Ticks - this.HeartbeatDuration;
 
-            lock (this.cs_user)
+            foreach(var user in Users.Values)
             {
-                for (int i = 0; i < this.Users.Count; ++i)
+                long heartbeat_time = user.LatestHeartbeatTime;
+                if (heartbeat_time >= allowed_time)
                 {
-                    long heartbeat_time = this.Users[i].LatestHeartbeatTime;
-                    if (heartbeat_time >= allowed_time)
-                    {
-                        continue;
-                    }
-
-                    this.Users[i].DisConnect();
+                    continue;
                 }
-            }
+
+                //TODO: 여기서 불러도 스레드 세이프 한지 꼼꼼하게 알아보기
+                user.DisConnect();
+            }            
         }
 
 

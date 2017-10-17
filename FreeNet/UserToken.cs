@@ -7,6 +7,9 @@ using System.Threading;
 
 namespace FreeNet
 {
+    //TODO: ClietnSession으로 이름을 바꾼다.
+    //TODO: 서버용도 만들어야 하므로 부모 클래스를 상속하도록 한다.
+    //TODO: 하트 비트 분리하기
     public class UserToken
     {
         enum State
@@ -35,6 +38,8 @@ namespace FreeNet
         // 하트비트 갱신. C -> S
         public const short SYS_UPDATE_HEARTBEAT = -3;
 
+        public Int64 UniqueId { get; private set; } = 0;
+
         // close중복 처리 방지를 위한 플래그.
         // 0 = 연결된 상태.
         // 1 = 종료된 상태.
@@ -60,8 +65,6 @@ namespace FreeNet
 
         IMessageDispatcher Dispatcher;
 
-        //public delegate void ClosedDelegate(UserToken token);
-        //public ClosedDelegate OnSessionClosed;
         public Action<UserToken> OnSessionClosed;
 
         // heartbeat.
@@ -70,8 +73,9 @@ namespace FreeNet
         bool AutoHeartbeat;
 
 
-        public UserToken(IMessageDispatcher dispatcher)
+        public UserToken(Int64 uniqueId, IMessageDispatcher dispatcher)
         {
+            UniqueId = uniqueId;
             Dispatcher = dispatcher;
             cs_sending_queue = new object();
 

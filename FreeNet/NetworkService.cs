@@ -18,6 +18,7 @@ namespace FreeNet
 		public LogicMessageEntry LogicEntry { get; private set; }
 		public UserTokenManager UserManager { get; private set; }
 
+		Int64 SequenceId = 0;
 
 		/// <summary>
 		/// 로직 스레드를 사용하려면 use_logicthread를 true로 설정한다.
@@ -41,39 +42,32 @@ namespace FreeNet
 			}
 		}
 
-
-		public void Initialize()
-		{
-			// configs.
-			int max_connections = 10000;
-			int buffer_size = 1024;
-
-			Initialize(max_connections, buffer_size);
-		}
-
+				
 		// Initializes the server by preallocating reusable buffers and 
 		// context objects.  These objects do not need to be preallocated 
 		// or reused, but it is done this way to illustrate how the API can 
 		// easily be used to create reusable objects to increase server performance.
 		//
-		public void Initialize(int max_connections, int buffer_size)
+		public void Initialize(ServerOption serverOption)
 		{
 			// receive버퍼만 할당해 놓는다.
 			// send버퍼는 보낼때마다 할당하든 풀에서 얻어오든 하기 때문에.
 			int pre_alloc_count = 1;
-
-			BufferManager buffer_manager = new BufferManager(max_connections * buffer_size * pre_alloc_count, buffer_size);
-			ReceiveEventArgsPool = new SocketAsyncEventArgsPool();
-			SendEventArgsPool = new SocketAsyncEventArgsPool();
-
+			var totalBytes = serverOption.MaxConnectionCount * serverOption.ReceiveBufferSize * pre_alloc_count;
+			BufferManager buffer_manager = new BufferManager(totalBytes, serverOption.ReceiveBufferSize);
+			
 			// Allocates one large byte buffer which all I/O operations use a piece of.  This gaurds 
 			// against memory fragmentation
 			buffer_manager.InitBuffer();
 
+
+			ReceiveEventArgsPool = new SocketAsyncEventArgsPool();
+			SendEventArgsPool = new SocketAsyncEventArgsPool();
+
 			// preallocate pool of SocketAsyncEventArgs objects
 			SocketAsyncEventArgs arg;
 
-			for (int i = 0; i < max_connections; i++)
+			for (int i = 0; i < serverOption.MaxConnectionCount; i++)
 			{
 				// 더이상 UserToken을 미리 생성해 놓지 않는다.
 				// 다수의 클라이언트에서 접속 -> 메시지 송수신 -> 접속 해제를 반복할 경우 문제가 생김.
@@ -155,20 +149,26 @@ namespace FreeNet
 		/// </summary>
 		/// <param name="client_socket"></param>
 		void OnNewClient(Socket client_socket, object token)
-		{
+		{			
+			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
+			var uniqueId = Interlocked.Increment(ref SequenceId);
+
+			UserToken user_token = new UserToken(uniqueId, LogicEntry);
+			user_token.OnSessionClosed += this.OnSessionClosed;
+
+
+			UserManager.Add(user_token);
+
 			// 플에서 하나 꺼내와 사용한다.
 			SocketAsyncEventArgs receive_args = this.ReceiveEventArgsPool.Pop();
 			SocketAsyncEventArgs send_args = this.SendEventArgsPool.Pop();
 
-			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
-			UserToken user_token = new UserToken(this.LogicEntry);
-			user_token.OnSessionClosed += this.OnSessionClosed;
 			receive_args.UserToken = user_token;
 			send_args.UserToken = user_token;
-
-			this.UserManager.Add(user_token);
+						
 
 			user_token.OnConnected();
+
 			if (SessionCreatedCallBack != null)
 			{
 				SessionCreatedCallBack(user_token);
