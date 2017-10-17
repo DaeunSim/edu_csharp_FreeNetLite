@@ -169,15 +169,12 @@ namespace FreeNet
 
 			user_token.OnConnected();
 
-			if (SessionCreatedCallBack != null)
-			{
-				SessionCreatedCallBack(user_token);
-			}
+			SessionCreatedCallBack?.Invoke(user_token);
 
 			BeginReceive(client_socket, receive_args, send_args);
 
 			Packet msg = Packet.Create((short)UserToken.SYS_START_HEARTBEAT);
-			byte send_interval = 5;
+			var send_interval = (byte)5;
 			msg.Push(send_interval);
 			user_token.Send(msg);
 		}

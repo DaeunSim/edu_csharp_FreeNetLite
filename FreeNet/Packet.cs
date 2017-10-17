@@ -5,6 +5,8 @@ using System.Text;
 
 namespace FreeNet
 {
+	//TODO: Pakcet 클래스는 IPacket 클래스를 상속 하도록 한다.
+	//TODO: ZeroFormat 혹은 MsgPack을 사용하는 Packet 클래스를 만든다.
 	/// <summary>
 	/// byte[] 버퍼를 참조로 보관하여 pop_xxx 매소드 호출 순서대로 데이터 변환을 수행한다.
 	/// </summary>
@@ -20,17 +22,10 @@ namespace FreeNet
 		public static Packet Create(Int16 protocol_id)
 		{
 			Packet packet = new Packet();
-			//todo:다음 리팩토링 대상은 바로 여기다. CPacketBufferManager!!!
-			//CPacket packet = CPacketBufferManager.pop();
 			packet.SetProtocol(protocol_id);
 			return packet;
 		}
-
-		public static void Destroy(Packet packet)
-		{
-			//CPacketBufferManager.push(packet);
-		}
-
+				
 		public Packet(ArraySegment<byte> buffer, UserToken owner)
 		{
 			// 참조로만 보관하여 작업한다.
