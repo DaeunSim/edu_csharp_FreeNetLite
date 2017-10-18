@@ -25,12 +25,6 @@ namespace FreeNet
 			}
 
 			return null;
-		}
-
-		// ConcurrentStack의 Count는 호출 시마다 일일이 계산하므로 가능하면 사용하지 않는 것이 좋다.
-		//public int Count
-		//{
-		//	get { return Pool.Count; }
-		//}
+		}		
 	}
 }
