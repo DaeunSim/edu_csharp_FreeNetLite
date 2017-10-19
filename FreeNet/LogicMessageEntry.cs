@@ -7,6 +7,7 @@ using System.Threading;
 namespace FreeNet
 {
     /// <summary>
+    /// 패킷을 처리해서 컨텐츠를 실행하는 곳이다.
     /// 수신된 패킷을 받아 로직 스레드에서 분배하는 역할을 담당한다.
     /// </summary>
     public class LogicMessageEntry : IMessageDispatcher
@@ -49,7 +50,7 @@ namespace FreeNet
 
 
         /// <summary>
-        /// 로직 스레드.
+        /// 로직 스레드. 
         /// </summary>
         void DoLogic()
         {
@@ -75,7 +76,7 @@ namespace FreeNet
                     continue;
                 }
 
-                // 세션이 아닌 컨텐츠 처리 클래스를 만든다
+                //TODO: 여기서 컨텐츠 처리를 한다.
                 msg.Owner.OnMessage(msg);
             }
         }
