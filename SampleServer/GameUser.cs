@@ -8,12 +8,12 @@ namespace SampleServer
 	/// </summary>
 	class GameUser : IPeer
 	{
-		Session Token;
+		SessionClient Session;
 
-		public GameUser(Session userToken)
+		public GameUser(SessionClient session)
 		{
-			Token = userToken;
-			Token.SetPeer(this);
+			Session = session;
+			Session.SetPeer(this);
 		}
 
 		void IPeer.OnRemoved()
@@ -26,12 +26,12 @@ namespace SampleServer
 		public void Send(Packet pkt)
 		{
 			pkt.RecordSize();
-			this.Token.Send(new ArraySegment<byte>(pkt.Buffer, 0, pkt.Position));
+			Session.PreSend(new ArraySegment<byte>(pkt.Buffer, 0, pkt.Position));
 		}
 				
 		public void DisConnect()
 		{
-			this.Token.Ban();
+			Session.Ban();
 		}
 
 		public void OnMessage(Packet pkt)
@@ -61,7 +61,7 @@ namespace SampleServer
 								Send(dummy);
 							}
 
-							this.Token.Ban();
+							this.Session.Ban();
 						}
 					}
 					break;
@@ -71,7 +71,7 @@ namespace SampleServer
 
 		void send(ArraySegment<byte> data)
 		{
-			this.Token.Send(data);
+			Session.PreSend(data);
 		}
 	}
 }

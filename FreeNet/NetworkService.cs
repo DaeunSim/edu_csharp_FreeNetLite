@@ -13,7 +13,8 @@ namespace FreeNet
 		SocketAsyncEventArgsPool ReceiveEventArgsPool;
 		SocketAsyncEventArgsPool SendEventArgsPool;
 
-		public Action<Session> SessionCreatedCallBack;
+		public Action<SessionClient> SessionClientCreatedCallBack = null;
+		public Action<SessionServer> SessionServerCreatedCallBack = null;
 
 		public LogicMessageEntry LogicEntry { get; private set; }
 		public UserTokenManager UserManager { get; private set; }
@@ -32,7 +33,6 @@ namespace FreeNet
 		/// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
 		public NetworkService(bool use_logicthread = false)
 		{
-			SessionCreatedCallBack = null;
 			UserManager = new UserTokenManager();
 
 			if (use_logicthread)
@@ -153,7 +153,7 @@ namespace FreeNet
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
 
-			Session user_token = new Session(uniqueId, LogicEntry);
+			var user_token = new SessionClient(uniqueId, LogicEntry);
 			user_token.OnSessionClosed += this.OnSessionClosed;
 
 
@@ -169,7 +169,7 @@ namespace FreeNet
 
 			user_token.OnConnected();
 
-			SessionCreatedCallBack?.Invoke(user_token);
+			SessionClientCreatedCallBack?.Invoke(user_token);
 
 			BeginReceive(client_socket, receive_args, send_args);
 

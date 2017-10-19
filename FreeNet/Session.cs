@@ -7,8 +7,6 @@ using System.Threading;
 
 namespace FreeNet
 {
-    //TODO: ClietnSession으로 이름을 바꾼다.
-    //TODO: 서버용도 만들어야 하므로 부모 클래스를 상속하도록 한다.
     //TODO: 하트 비트 분리하기
     public class Session
     {
@@ -30,13 +28,13 @@ namespace FreeNet
         }
 
         // 종료 요청. S -> C
-        const short SYS_CLOSE_REQ = 0;
+        protected const short SYS_CLOSE_REQ = 0;
         // 종료 응답. C -> S
-        const short SYS_CLOSE_ACK = -1;
+        protected const short SYS_CLOSE_ACK = -1;
         // 하트비트 시작. S -> C
         public const short SYS_START_HEARTBEAT = -2;
         // 하트비트 갱신. C -> S
-        public const short SYS_UPDATE_HEARTBEAT = -3;
+        protected const short SYS_UPDATE_HEARTBEAT = -3;
 
         public Int64 UniqueId { get; private set; } = 0;
 
@@ -54,7 +52,7 @@ namespace FreeNet
         // 바이트를 패킷 형식으로 해석해주는 해석기.
         MessageResolver MsgResolver;
 
-        // session객체. 어플리케이션 딴에서 구현하여 사용.
+        // 리모트 객체. 어플리케이션 딴에서 구현하여 사용.
         IPeer Peer;
 
         // BufferList적용을 위해 queue에서 list로 변경.
@@ -137,7 +135,8 @@ namespace FreeNet
             }
         }
 
-
+        // 이 함수는 클라이언트용 함수다. 예제 코드로 넘기자
+        //TODO: 이 클래스에서 메시지를 처리하지 않도록 한다.
         public void OnMessage(Packet msg)
         {
             // active close를 위한 코딩.
@@ -194,9 +193,9 @@ namespace FreeNet
 
             if (msg.ProtocolId == SYS_CLOSE_ACK)
             {
-                if (this.OnSessionClosed != null)
+                if (OnSessionClosed != null)
                 {
-                    this.OnSessionClosed(this);
+                    OnSessionClosed(this);
                 }
             }
         }
@@ -209,28 +208,28 @@ namespace FreeNet
                 return;
             }
 
-            if (this.CurrentState == State.Closed)
+            if (CurrentState == State.Closed)
             {
                 // already closed.
                 return;
             }
 
-            this.CurrentState = State.Closed;
-            this.Sock.Close();
-            this.Sock = null;
+            CurrentState = State.Closed;
+            Sock.Close();
+            Sock = null;
 
-            this.SendEventArgs.UserToken = null;
-            this.ReceiveEventArgs.UserToken = null;
+            SendEventArgs.UserToken = null;
+            ReceiveEventArgs.UserToken = null;
 
-            this.SendingList.Clear();
-            this.MsgResolver.ClearBuffer();
+            SendingList.Clear();
+            MsgResolver.ClearBuffer();
 
-            if (this.Peer != null)
+            if (Peer != null)
             {
-                Packet msg = Packet.Create((short)-1);
-                if (this.Dispatcher != null)
+                var msg = Packet.Create((short)-1);
+                if (Dispatcher != null)
                 {
-                    this.Dispatcher.OnMessage(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+                    Dispatcher.OnMessage(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
                 }
                 else
                 {
@@ -249,13 +248,13 @@ namespace FreeNet
         ///		현재 진행중인 SendAsync가 완료되었을 때 큐를 검사하여 나머지 패킷을 전송한다.
         /// </summary>
         /// <param name="msg"></param>
-        public void Send(ArraySegment<byte> data)
+        public void PreSend(ArraySegment<byte> data)
         {
-            lock (this.cs_sending_queue)
+            lock (cs_sending_queue)
             {
-                this.SendingList.Add(data);
+                SendingList.Add(data);
 
-                if (this.SendingList.Count > 1)
+                if (SendingList.Count > 1)
                 {
                     // 큐에 무언가가 들어 있다면 아직 이전 전송이 완료되지 않은 상태이므로 큐에 추가만 하고 리턴한다.
                     // 현재 수행중인 SendAsync가 완료된 이후에 큐를 검사하여 데이터가 있으면 SendAsync를 호출하여 전송해줄 것이다.
@@ -270,7 +269,7 @@ namespace FreeNet
         public void Send(Packet msg)
         {
             msg.RecordSize();
-            Send(new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+            PreSend(new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
         }
 
 
@@ -400,34 +399,7 @@ namespace FreeNet
         }
 
 
-        /// <summary>
-        /// 연결을 종료한다. 단, 종료코드를 전송한 뒤 상대방이 먼저 연결을 끊게 한다.
-        /// 주로 서버에서 클라이언트의 연결을 끊을 때 사용한다.
-        /// 
-        /// TIME_WAIT상태를 서버에 남기지 않으려면 disconnect대신 이 매소드를 사용해서
-        /// 클라이언트를 종료시켜야 한다.
-        /// </summary>
-        public void Ban()
-        {
-            try
-            {
-                byebye();
-            }
-            catch (Exception)
-            {
-                Close();
-            }
-        }
-
-
-        /// <summary>
-        /// 종료코드를 전송하여 상대방이 먼저 끊도록 한다.
-        /// </summary>
-        void byebye()
-        {
-            Packet bye = Packet.Create(SYS_CLOSE_REQ);
-            Send(bye);
-        }
+        
 
 
         public bool is_connected()

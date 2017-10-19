@@ -12,7 +12,7 @@ namespace SampleServer
 			var service = new FreeNet.NetworkService(false);
 
 			// 콜백 매소드 설정.
-			service.SessionCreatedCallBack += OnSessionCreated;
+			service.SessionClientCreatedCallBack += OnSessionCreated;
 
 			var socketOpt = new FreeNet.SocketOption();
 			socketOpt.NoDelay = true;
@@ -53,7 +53,7 @@ namespace SampleServer
 		/// n개의 워커 스레드에서 호출될 수 있으므로 공유 자원 접근시 동기화 처리를 해줘야 합니다.
 		/// </summary>
 		/// <returns></returns>
-		static void OnSessionCreated(FreeNet.Session token)
+		static void OnSessionCreated(FreeNet.SessionClient token)
 		{
 			var user = new GameUser(token);
 			lock (UserList)

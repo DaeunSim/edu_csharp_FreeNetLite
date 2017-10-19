@@ -75,6 +75,7 @@ namespace FreeNet
                     continue;
                 }
 
+                // 세션이 아닌 컨텐츠 처리 클래스를 만든다
                 msg.Owner.OnMessage(msg);
             }
         }
