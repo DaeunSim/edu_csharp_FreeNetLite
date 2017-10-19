@@ -8,7 +8,7 @@ namespace FreeNet
 {
     class HeartbeatSender
     {
-        UserToken Remote;
+        Session Remote;
 
         Timer TimerHeartBeat;
         UInt32 IntervalSecondTime;
@@ -16,7 +16,7 @@ namespace FreeNet
         Int32 ElapsedSecondime;
 
 
-        public HeartbeatSender(UserToken remote, UInt32 intervalSecondTime)
+        public HeartbeatSender(Session remote, UInt32 intervalSecondTime)
         {
             Remote = remote;
 
@@ -33,7 +33,7 @@ namespace FreeNet
 
         void Send()
         {
-            var msg = Packet.Create((short)UserToken.SYS_UPDATE_HEARTBEAT);
+            var msg = Packet.Create((short)Session.SYS_UPDATE_HEARTBEAT);
             Remote.Send(msg);
         }
 

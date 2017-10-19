@@ -14,7 +14,7 @@ namespace FreeNet
 	/// </summary>
 	public class TCPConnector
 	{
-		public Action<UserToken> ConnectedCallback = null;
+		public Action<Session> ConnectedCallback = null;
 
 		// 원격지 서버와의 연결을 위한 소켓.
 		Socket ClientSocket;
@@ -53,7 +53,7 @@ namespace FreeNet
 			if (e.SocketError == SocketError.Success)
 			{
 				//TODO:임시로 빌드 되게 수정했다
-				UserToken token = new UserToken(1, RefNetworkService.LogicEntry);
+				Session token = new Session(1, RefNetworkService.LogicEntry);
 
 				// 데이터 수신 준비.
 				RefNetworkService.OnConnectCompleted(ClientSocket, token);

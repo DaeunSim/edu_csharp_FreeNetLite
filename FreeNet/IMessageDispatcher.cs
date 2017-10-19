@@ -7,6 +7,6 @@ namespace FreeNet
 {
     public interface IMessageDispatcher
     {
-        void OnMessage(UserToken user, ArraySegment<byte> buffer);
+        void OnMessage(Session user, ArraySegment<byte> buffer);
     }
 }

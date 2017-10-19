@@ -16,7 +16,7 @@ namespace FreeNet
         // 현재 Users에 추가된 유저 수. ConcurrentDictionary의 Count를 사용하면 일일이 계산하므로 따로 변수로 계산해 놓는다.
         Int64 CurrentCount;
 
-        ConcurrentDictionary<Int64, UserToken> Users = new ConcurrentDictionary<Int64, UserToken>();
+        ConcurrentDictionary<Int64, Session> Users = new ConcurrentDictionary<Int64, Session>();
 
         Timer TimerHeartbeat;
         long HeartbeatDuration;
@@ -32,7 +32,7 @@ namespace FreeNet
         }
 
 
-        public void Add(UserToken user)
+        public void Add(Session user)
         {
            if( Users.TryAdd(user.UniqueId, user))
             {
@@ -41,7 +41,7 @@ namespace FreeNet
         }
 
 
-        public void Remove(UserToken user)
+        public void Remove(Session user)
         {
             var uniqueId = user.UniqueId;
 
@@ -52,7 +52,7 @@ namespace FreeNet
         }
 
 
-        public bool IsExist(UserToken user)
+        public bool IsExist(Session user)
         {
             return Users.ContainsKey(user.UniqueId);
         }

@@ -32,7 +32,7 @@ namespace FreeNet
         }
 
 
-        public void OnMessage(UserToken user, ArraySegment<byte> buffer)
+        public void OnMessage(Session user, ArraySegment<byte> buffer)
         {
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.

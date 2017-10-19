@@ -8,9 +8,9 @@ namespace SampleServer
 	/// </summary>
 	class GameUser : IPeer
 	{
-		UserToken Token;
+		Session Token;
 
-		public GameUser(UserToken userToken)
+		public GameUser(Session userToken)
 		{
 			Token = userToken;
 			Token.SetPeer(this);

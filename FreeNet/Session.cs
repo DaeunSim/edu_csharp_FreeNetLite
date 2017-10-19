@@ -10,7 +10,7 @@ namespace FreeNet
     //TODO: ClietnSession으로 이름을 바꾼다.
     //TODO: 서버용도 만들어야 하므로 부모 클래스를 상속하도록 한다.
     //TODO: 하트 비트 분리하기
-    public class UserToken
+    public class Session
     {
         enum State
         {
@@ -43,7 +43,7 @@ namespace FreeNet
         // close중복 처리 방지를 위한 플래그.
         // 0 = 연결된 상태.
         // 1 = 종료된 상태.
-        int IsClosed;
+        private int IsClosed;
 
         State CurrentState;
         public Socket Sock { get; set; }
@@ -65,7 +65,7 @@ namespace FreeNet
 
         IMessageDispatcher Dispatcher;
 
-        public Action<UserToken> OnSessionClosed;
+        public Action<Session> OnSessionClosed;
 
         // heartbeat.
         public long LatestHeartbeatTime { get; private set; }
@@ -73,7 +73,7 @@ namespace FreeNet
         bool AutoHeartbeat;
 
 
-        public UserToken(Int64 uniqueId, IMessageDispatcher dispatcher)
+        public Session(Int64 uniqueId, IMessageDispatcher dispatcher)
         {
             UniqueId = uniqueId;
             Dispatcher = dispatcher;

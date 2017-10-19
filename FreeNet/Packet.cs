@@ -12,7 +12,7 @@ namespace FreeNet
 	/// </summary>
 	public class Packet
 	{
-		public UserToken Owner { get; private set; }
+		public Session Owner { get; private set; }
 		public byte[] Buffer { get; private set; }
 		public int Position { get; private set; }
 		public int Size { get; private set; }
@@ -26,7 +26,7 @@ namespace FreeNet
 			return packet;
 		}
 				
-		public Packet(ArraySegment<byte> buffer, UserToken owner)
+		public Packet(ArraySegment<byte> buffer, Session owner)
 		{
 			// 참조로만 보관하여 작업한다.
 			// 복사가 필요하면 별도로 구현해야 한다.
@@ -43,7 +43,7 @@ namespace FreeNet
 			Owner = owner;
 		}
 
-		public Packet(byte[] buffer, UserToken owner)
+		public Packet(byte[] buffer, Session owner)
 		{
 			// 참조로만 보관하여 작업한다.
 			// 복사가 필요하면 별도로 구현해야 한다.

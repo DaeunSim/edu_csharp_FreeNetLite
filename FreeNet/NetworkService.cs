@@ -13,7 +13,7 @@ namespace FreeNet
 		SocketAsyncEventArgsPool ReceiveEventArgsPool;
 		SocketAsyncEventArgsPool SendEventArgsPool;
 
-		public Action<UserToken> SessionCreatedCallBack;
+		public Action<Session> SessionCreatedCallBack;
 
 		public LogicMessageEntry LogicEntry { get; private set; }
 		public UserTokenManager UserManager { get; private set; }
@@ -120,7 +120,7 @@ namespace FreeNet
 		/// 원격 서버에 접속 성공 했을 때 호출됩니다.
 		/// </summary>
 		/// <param name="socket"></param>
-		public void OnConnectCompleted(Socket socket, UserToken token)
+		public void OnConnectCompleted(Socket socket, Session token)
 		{
 			token.OnSessionClosed += this.OnSessionClosed;
 			UserManager.Add(token);
@@ -153,7 +153,7 @@ namespace FreeNet
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
 
-			UserToken user_token = new UserToken(uniqueId, LogicEntry);
+			Session user_token = new Session(uniqueId, LogicEntry);
 			user_token.OnSessionClosed += this.OnSessionClosed;
 
 
@@ -173,7 +173,7 @@ namespace FreeNet
 
 			BeginReceive(client_socket, receive_args, send_args);
 
-			Packet msg = Packet.Create((short)UserToken.SYS_START_HEARTBEAT);
+			Packet msg = Packet.Create((short)Session.SYS_START_HEARTBEAT);
 			var send_interval = (byte)5;
 			msg.Push(send_interval);
 			user_token.Send(msg);
@@ -182,7 +182,7 @@ namespace FreeNet
 		void BeginReceive(Socket socket, SocketAsyncEventArgs receive_args, SocketAsyncEventArgs send_args)
 		{
 			// receive_args, send_args 아무곳에서나 꺼내와도 된다. 둘다 동일한 CUserToken을 물고 있다.
-			UserToken token = receive_args.UserToken as UserToken;
+			Session token = receive_args.UserToken as Session;
 			token.SetEventArgs(receive_args, send_args);
 			// 생성된 클라이언트 소켓을 보관해 놓고 통신할 때 사용한다.
 			token.Sock = socket;
@@ -215,7 +215,7 @@ namespace FreeNet
 		{
 			try
 			{
-				UserToken token = e.UserToken as UserToken;
+				Session token = e.UserToken as Session;
 				token.ProcessSend(e);
 			}
 			catch (Exception)
@@ -228,7 +228,7 @@ namespace FreeNet
 		//
 		private void ProcessReceive(SocketAsyncEventArgs e)
 		{
-			UserToken token = e.UserToken as UserToken;
+			Session token = e.UserToken as Session;
 			if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
 			{
 				token.OnReceive(e.Buffer, e.Offset, e.BytesTransferred);
@@ -254,7 +254,7 @@ namespace FreeNet
 			}
 		}
 
-		void OnSessionClosed(UserToken token)
+		void OnSessionClosed(Session token)
 		{
 			UserManager.Remove(token);
 
