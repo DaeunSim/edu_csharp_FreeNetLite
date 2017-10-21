@@ -9,7 +9,7 @@ namespace SampleServer
 
 		static void Main(string[] args)
 		{
-			var service = new FreeNet.NetworkService(false);
+			var service = new FreeNet.NetworkService();
 
 			// 콜백 매소드 설정.
 			service.SessionClientCreatedCallBack += OnSessionCreated;

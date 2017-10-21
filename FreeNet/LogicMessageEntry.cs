@@ -8,7 +8,7 @@ namespace FreeNet
 {
     /// <summary>
     /// 패킷을 처리해서 컨텐츠를 실행하는 곳이다.
-    /// 수신된 패킷을 받아 로직 스레드에서 분배하는 역할을 담당한다.
+    /// FreeNet을 사용할 때 LogicMessageEntry을 참고해서 IMessageDispatcher를 상속 받는 클래스를 맞게 구현하자
     /// </summary>
     public class LogicMessageEntry : IMessageDispatcher
     {
@@ -20,6 +20,8 @@ namespace FreeNet
         public LogicMessageEntry(NetworkService service)
         {
             RefService = service;
+
+            Start();
         }
 
 
