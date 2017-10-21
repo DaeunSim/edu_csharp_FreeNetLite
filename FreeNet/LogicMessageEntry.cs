@@ -12,7 +12,9 @@ namespace FreeNet
     /// </summary>
     public class LogicMessageEntry : IMessageDispatcher
     {
+        //TODO: 제거 예정
         NetworkService RefService;
+
         ILogicQueue MessageQueue = new DoubleBufferingQueue();
         AutoResetEvent LogicEvent = new AutoResetEvent(false);
 
