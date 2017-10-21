@@ -16,7 +16,7 @@ namespace FreeNet
 		public Action<SessionClient> SessionClientCreatedCallBack = null;
 		public Action<SessionServer> SessionServerCreatedCallBack = null;
 
-		public IPacketDispatcher PacketDisp { get; private set; }
+		public IPacketDispatcher PacketDispatcher { get; private set; }
 		public UserTokenManager UserManager { get; private set; }
 
 		Int64 SequenceId = 0;
@@ -37,10 +37,10 @@ namespace FreeNet
 
 			if (userPacketDispatcher == null)
 			{
-				PacketDisp = new DefaultPacketDispatcher();
+				PacketDispatcher = new DefaultPacketDispatcher();
 			} else
 			{
-				PacketDisp = userPacketDispatcher;
+				PacketDispatcher = userPacketDispatcher;
 			}
 		}
 
@@ -155,7 +155,7 @@ namespace FreeNet
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
 
-			var user_token = new SessionClient(uniqueId, PacketDisp);
+			var user_token = new SessionClient(uniqueId, PacketDispatcher);
 			user_token.OnSessionClosed += this.OnSessionClosed;
 
 

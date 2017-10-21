@@ -10,8 +10,8 @@ namespace SampleServer
 	{
 		BEGIN = 0,
 
-		CHAT_MSG_REQ = 1,
-		CHAT_MSG_ACK = 2,
+		ECHO_REQ = 1,
+		ECHO_ACK = 2,
 
 		END
 	}

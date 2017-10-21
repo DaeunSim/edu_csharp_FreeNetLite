@@ -28,8 +28,10 @@ namespace SampleServer
 			Console.WriteLine("Started!");
 
 
-			var packetProcess = new PacketProcess();
+			// 패킷 처리기 생성 및 실행
+			var packetProcess = new PacketProcess(service.PacketDispatcher);
 			packetProcess.Start();
+
 
 			while (true)
 			{
