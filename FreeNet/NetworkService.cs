@@ -37,7 +37,7 @@ namespace FreeNet
 
 			if (userPacketDispatcher == null)
 			{
-				PacketDisp = new PacketDispatcher();
+				PacketDisp = new DefaultPacketDispatcher();
 			} else
 			{
 				PacketDisp = userPacketDispatcher;
