@@ -32,7 +32,7 @@ namespace FreeNet
         }
         
         //TODO: 이 함수를 호출하는 패킷처리 클래스 만들기
-        Queue<Packet> DispatchAll()
+        public Queue<Packet> DispatchAll()
         {
             return MessageQueue.TakeAll();
         }

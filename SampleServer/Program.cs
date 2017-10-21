@@ -28,6 +28,9 @@ namespace SampleServer
 			Console.WriteLine("Started!");
 
 
+			var packetProcess = new PacketProcess();
+			packetProcess.Start();
+
 			while (true)
 			{
 				//Console.Write(".");
@@ -39,6 +42,8 @@ namespace SampleServer
 				}
 				else if (input.Equals("exit"))
 				{
+					packetProcess.Stop();
+
 					Console.WriteLine("Exit !!!");
 					break;
 				}

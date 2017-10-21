@@ -16,7 +16,7 @@ namespace FreeNet
 		public Action<SessionClient> SessionClientCreatedCallBack = null;
 		public Action<SessionServer> SessionServerCreatedCallBack = null;
 
-		public IPacketDispatcher LogicEntry { get; private set; }
+		public IPacketDispatcher PacketDisp { get; private set; }
 		public UserTokenManager UserManager { get; private set; }
 
 		Int64 SequenceId = 0;
@@ -31,16 +31,16 @@ namespace FreeNet
 		///  -> IO스레드에서 직접 메시지 처리를 담당하게 된다.
 		/// </summary>
 		/// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
-		public NetworkService(IPacketDispatcher userMessageDispatcher=null)
+		public NetworkService(IPacketDispatcher userPacketDispatcher=null)
 		{
 			UserManager = new UserTokenManager();
 
-			if (userMessageDispatcher == null)
+			if (userPacketDispatcher == null)
 			{
-				LogicEntry = new PacketDispatcher();
+				PacketDisp = new PacketDispatcher();
 			} else
 			{
-				LogicEntry = userMessageDispatcher;
+				PacketDisp = userPacketDispatcher;
 			}
 		}
 
@@ -155,7 +155,7 @@ namespace FreeNet
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
 
-			var user_token = new SessionClient(uniqueId, LogicEntry);
+			var user_token = new SessionClient(uniqueId, PacketDisp);
 			user_token.OnSessionClosed += this.OnSessionClosed;
 
 
