@@ -5,8 +5,8 @@ using System.Text;
 
 namespace FreeNet
 {
-    public interface IMessageDispatcher
+    public interface IPacketDispatcher
     {
-        void OnMessage(Session user, ArraySegment<byte> buffer);
+        void IncomingPacket(Session user, ArraySegment<byte> buffer);
     }
 }

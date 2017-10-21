@@ -61,7 +61,7 @@ namespace FreeNet
         // sending_list lock처리에 사용되는 객체.
         private object cs_sending_queue;
 
-        PacketDispatcher Dispatcher;
+        IPacketDispatcher Dispatcher;
 
         public Action<Session> OnSessionClosed;
 
@@ -71,7 +71,7 @@ namespace FreeNet
         bool AutoHeartbeat;
 
 
-        public Session(Int64 uniqueId, PacketDispatcher dispatcher)
+        public Session(Int64 uniqueId, IPacketDispatcher dispatcher)
         {
             UniqueId = uniqueId;
             Dispatcher = dispatcher;
@@ -130,6 +130,8 @@ namespace FreeNet
             else
             {
                 //TODO: 이런 방식이 아닌 직접 패킷 처리 스레드를 호출하도록 한다.
+                //       Dispatcher.IncomingPacket(this, buffer) 을 호출해서 처리하도록 한다.
+                //       Dispatcher는 큐에 패킷을 저장하지 않고 바로 패킷을 처리하도록 한다.
                 // IO스레드에서 직접 호출.
                 Packet msg = new Packet(buffer, this);
                 OnMessage(msg);
@@ -230,10 +232,13 @@ namespace FreeNet
                 var msg = Packet.Create((short)-1);
                 if (Dispatcher != null)
                 {
-                    Dispatcher.OnMessage(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+                    Dispatcher.IncomingPacket(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
                 }
                 else
                 {
+                    //TODO: 이런 방식이 아닌 직접 패킷 처리 스레드를 호출하도록 한다.
+                    //       Dispatcher.IncomingPacket(this, buffer) 을 호출해서 처리하도록 한다.
+                    //       Dispatcher는 큐에 패킷을 저장하지 않고 바로 패킷을 처리하도록 한다.
                     OnMessage(msg);
                 }
             }

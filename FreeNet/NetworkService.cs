@@ -31,13 +31,16 @@ namespace FreeNet
 		///  -> IO스레드에서 직접 메시지 처리를 담당하게 된다.
 		/// </summary>
 		/// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
-		public NetworkService(IPacketDispatcher messageDispatcher=null)
+		public NetworkService(IPacketDispatcher userMessageDispatcher=null)
 		{
 			UserManager = new UserTokenManager();
 
-			if (messageDispatcher == null)
+			if (userMessageDispatcher == null)
 			{
-				LogicEntry = new PacketDispatcher(this);
+				LogicEntry = new PacketDispatcher();
+			} else
+			{
+				LogicEntry = userMessageDispatcher;
 			}
 		}
 
