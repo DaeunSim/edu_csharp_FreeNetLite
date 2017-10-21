@@ -12,7 +12,7 @@ namespace FreeNet
     //TODO: 하트 비트 분리하기
     public class SessionServer :  Session
     {
-        public SessionServer(Int64 uniqueId, IMessageDispatcher dispatcher) : base(uniqueId, dispatcher)
+        public SessionServer(Int64 uniqueId, IPacketDispatcher dispatcher) : base(uniqueId, dispatcher)
         {
 
         }

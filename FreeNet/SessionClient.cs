@@ -10,7 +10,7 @@ namespace FreeNet
     //TODO: 하트 비트 분리하기
     public class SessionClient : Session
     {
-        public SessionClient(Int64 uniqueId, IMessageDispatcher dispatcher) : base(uniqueId, dispatcher)
+        public SessionClient(Int64 uniqueId, IPacketDispatcher dispatcher) : base(uniqueId, dispatcher)
         {            
         }
 

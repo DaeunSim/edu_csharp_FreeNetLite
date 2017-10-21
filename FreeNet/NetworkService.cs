@@ -16,7 +16,7 @@ namespace FreeNet
 		public Action<SessionClient> SessionClientCreatedCallBack = null;
 		public Action<SessionServer> SessionServerCreatedCallBack = null;
 
-		public IMessageDispatcher LogicEntry { get; private set; }
+		public IPacketDispatcher LogicEntry { get; private set; }
 		public UserTokenManager UserManager { get; private set; }
 
 		Int64 SequenceId = 0;
@@ -31,13 +31,13 @@ namespace FreeNet
 		///  -> IO스레드에서 직접 메시지 처리를 담당하게 된다.
 		/// </summary>
 		/// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
-		public NetworkService(IMessageDispatcher messageDispatcher=null)
+		public NetworkService(IPacketDispatcher messageDispatcher=null)
 		{
 			UserManager = new UserTokenManager();
 
 			if (messageDispatcher == null)
 			{
-				LogicEntry = new LogicMessageEntry(this);
+				LogicEntry = new PacketDispatcher(this);
 			}
 		}
 
