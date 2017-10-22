@@ -175,7 +175,7 @@ namespace FreeNet
 
 			BeginReceive(client_socket, receive_args, send_args);
 
-			Packet msg = Packet.Create((short)Session.SYS_START_HEARTBEAT);
+			Packet msg = Packet.Create((short)NetworkDefine.SYS_START_HEARTBEAT);
 			var send_interval = (byte)5;
 			msg.Push(send_interval);
 			user_token.Send(msg);

@@ -1,7 +1,7 @@
 ﻿using System;
 using FreeNet;
 
-namespace SampleServer
+namespace EchoServerIOThreadPacketProcess
 {	
 	/// <summary>
 	/// 하나의 session객체를 나타낸다.

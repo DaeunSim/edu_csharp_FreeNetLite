@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace SampleServer
+namespace EchoServerIOThreadPacketProcess
 {
 	class Program
 	{
@@ -9,7 +9,9 @@ namespace SampleServer
 
 		static void Main(string[] args)
 		{
-			var service = new FreeNet.NetworkService();
+			// IoThreadPacketDispatcher 에서 바로 패킷을 처리한다. 즉 멀티스레드로 패킷을 처리한다.
+			var packetDispatcher = new IoThreadPacketDispatcher();
+			var service = new FreeNet.NetworkService(packetDispatcher);
 
 			// 콜백 매소드 설정.
 			service.SessionClientCreatedCallBack += OnSessionCreated;
@@ -26,12 +28,7 @@ namespace SampleServer
 			service.Listen("0.0.0.0", 7979, 100, socketOpt);
 			
 			Console.WriteLine("Started!");
-
-
-			// 패킷 처리기 생성 및 실행
-			var packetProcess = new PacketProcess(service.PacketDispatcher);
-			packetProcess.Start();
-
+									
 
 			while (true)
 			{
@@ -44,8 +41,6 @@ namespace SampleServer
 				}
 				else if (input.Equals("exit"))
 				{
-					packetProcess.Stop();
-
 					Console.WriteLine("Exit !!!");
 					break;
 				}

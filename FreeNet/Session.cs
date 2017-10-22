@@ -27,15 +27,7 @@ namespace FreeNet
             Closed,
         }
 
-        // 종료 요청. S -> C
-        protected const short SYS_CLOSE_REQ = 0;
-        // 종료 응답. C -> S
-        protected const short SYS_CLOSE_ACK = -1;
-        // 하트비트 시작. S -> C
-        public const short SYS_START_HEARTBEAT = -2;
-        // 하트비트 갱신. C -> S
-        public const short SYS_UPDATE_HEARTBEAT = -3;
-
+        
         public Int64 UniqueId { get; private set; } = 0;
 
         // close중복 처리 방지를 위한 플래그.
@@ -139,7 +131,8 @@ namespace FreeNet
         }
 
         // 이 함수는 클라이언트용 함수다. 예제 코드로 넘기자
-        //TODO: 이 클래스에서 메시지를 처리하지 않도록 한다.
+        //TODO: 이 클래스에서 메시지를 처리하지 않도록 한다. 사용 안하면 삭제하도록한다.
+        //       허트 비트 기능 이식할 때까지는 남기기
         public void OnMessage(Packet msg)
         {
             // active close를 위한 코딩.
@@ -147,11 +140,11 @@ namespace FreeNet
             //   만약 종료신호가 맞다면 disconnect를 호출하여 받은쪽에서 먼저 종료 요청을 보낸다.
             switch (msg.ProtocolId)
             {
-                case SYS_CLOSE_REQ:
+                case NetworkDefine.SYS_CLOSE_REQ:
                     DisConnect();
                     return;
 
-                case SYS_START_HEARTBEAT:
+                case NetworkDefine.SYS_START_HEARTBEAT:
                     {
                         // 순서대로 파싱해야 하므로 프로토콜 아이디는 버린다.
                         msg.PopProtocolId();
@@ -166,7 +159,7 @@ namespace FreeNet
                     }
                     return;
 
-                case SYS_UPDATE_HEARTBEAT:
+                case NetworkDefine.SYS_UPDATE_HEARTBEAT:
                     //Console.WriteLine("heartbeat : " + DateTime.Now);
                     this.LatestHeartbeatTime = DateTime.Now.Ticks;
                     return;
@@ -179,7 +172,7 @@ namespace FreeNet
                 {
                     switch (msg.ProtocolId)
                     {
-                        case SYS_CLOSE_ACK:
+                        case NetworkDefine.SYS_CLOSE_ACK:
                             this.Peer.OnRemoved();
                             break;
 
@@ -194,7 +187,7 @@ namespace FreeNet
                 }
             }
 
-            if (msg.ProtocolId == SYS_CLOSE_ACK)
+            if (msg.ProtocolId == NetworkDefine.SYS_CLOSE_ACK)
             {
                 if (OnSessionClosed != null)
                 {

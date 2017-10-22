@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SampleServer
+namespace EchoServerIOThreadPacketProcess
 {
 	public enum PROTOCOL_ID : short
 	{

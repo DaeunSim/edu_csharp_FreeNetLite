@@ -33,7 +33,7 @@ namespace FreeNet
 
         void Send()
         {
-            var msg = Packet.Create((short)Session.SYS_UPDATE_HEARTBEAT);
+            var msg = Packet.Create((short)NetworkDefine.SYS_UPDATE_HEARTBEAT);
             Remote.Send(msg);
         }
 

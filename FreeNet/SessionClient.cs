@@ -40,7 +40,7 @@ namespace FreeNet
         /// </summary>
         void byebye()
         {
-            Packet bye = Packet.Create(SYS_CLOSE_REQ);
+            Packet bye = Packet.Create(NetworkDefine.SYS_CLOSE_REQ);
             Send(bye);
         }
     }

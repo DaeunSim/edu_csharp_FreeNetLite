@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 
 
-namespace SampleServer
+namespace EchoServerIOThreadPacketProcess
 {
     class PacketProcess
     {
