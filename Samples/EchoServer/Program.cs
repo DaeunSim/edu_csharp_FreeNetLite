@@ -9,20 +9,19 @@ namespace SampleServer
 
 		static void Main(string[] args)
 		{
-			var service = new FreeNet.NetworkService();
-
-			// 콜백 매소드 설정.
-			service.SessionClientCreatedCallBack += OnSessionCreated;
-
-			var socketOpt = new FreeNet.SocketOption();
-			socketOpt.NoDelay = true;
-
-			// 초기화.
 			var serverOpt = new FreeNet.ServerOption();
 			serverOpt.MaxConnectionCount = 10000;
 			serverOpt.ReceiveBufferSize = 1024;
 
-			service.Initialize(serverOpt);
+			var service = new FreeNet.NetworkService(serverOpt);
+
+			// 콜백 매소드 설정.
+			service.SessionClientCreatedCallBack += OnSessionCreated;
+						
+			service.Initialize();
+
+			var socketOpt = new FreeNet.SocketOption();
+			socketOpt.NoDelay = true;
 			service.Listen("0.0.0.0", 7979, 100, socketOpt);
 			
 			Console.WriteLine("Started!");

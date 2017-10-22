@@ -53,7 +53,7 @@ namespace FreeNet
 			if (e.SocketError == SocketError.Success)
 			{
 				//TODO:임시로 빌드 되게 수정했다
-				Session token = new Session(1, RefNetworkService.PacketDispatcher);
+				Session token = new Session(1, RefNetworkService.PacketDispatcher, RefNetworkService.MessageResolver);
 
 				// 데이터 수신 준비.
 				RefNetworkService.OnConnectCompleted(ClientSocket, token);

@@ -17,8 +17,12 @@ namespace FreeNet
 		public Action<SessionServer> SessionServerCreatedCallBack = null;
 
 		public IPacketDispatcher PacketDispatcher { get; private set; }
+
+		public IMessageResolver MessageResolver { get; private set; }
+
 		public UserTokenManager UserManager { get; private set; }
 
+		public ServerOption ServerOpt { get; private set; }
 		Int64 SequenceId = 0;
 
 		/// <summary>
@@ -31,8 +35,10 @@ namespace FreeNet
 		///  -> IO스레드에서 직접 메시지 처리를 담당하게 된다.
 		/// </summary>
 		/// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
-		public NetworkService(IPacketDispatcher userPacketDispatcher=null)
+		public NetworkService(ServerOption serverOption, IPacketDispatcher userPacketDispatcher=null, 
+								IMessageResolver userMessageResolver = null)
 		{
+			ServerOpt = serverOption;
 			UserManager = new UserTokenManager();
 
 			if (userPacketDispatcher == null)
@@ -42,6 +48,15 @@ namespace FreeNet
 			{
 				PacketDispatcher = userPacketDispatcher;
 			}
+
+			if (userMessageResolver == null)
+			{
+				MessageResolver = new MessageResolver(ServerOpt.MaxPacketSize * 3);
+			}
+			else
+			{
+				MessageResolver = userMessageResolver;
+			}
 		}
 
 				
@@ -50,13 +65,13 @@ namespace FreeNet
 		// or reused, but it is done this way to illustrate how the API can 
 		// easily be used to create reusable objects to increase server performance.
 		//
-		public void Initialize(ServerOption serverOption)
+		public void Initialize()
 		{
 			// receive버퍼만 할당해 놓는다.
 			// send버퍼는 보낼때마다 할당하든 풀에서 얻어오든 하기 때문에.
 			int pre_alloc_count = 1;
-			var totalBytes = serverOption.MaxConnectionCount * serverOption.ReceiveBufferSize * pre_alloc_count;
-			BufferManager buffer_manager = new BufferManager(totalBytes, serverOption.ReceiveBufferSize);
+			var totalBytes = ServerOpt.MaxConnectionCount * ServerOpt.ReceiveBufferSize * pre_alloc_count;
+			BufferManager buffer_manager = new BufferManager(totalBytes, ServerOpt.ReceiveBufferSize);
 			
 			// Allocates one large byte buffer which all I/O operations use a piece of.  This gaurds 
 			// against memory fragmentation
@@ -69,7 +84,7 @@ namespace FreeNet
 			// preallocate pool of SocketAsyncEventArgs objects
 			SocketAsyncEventArgs arg;
 
-			for (int i = 0; i < serverOption.MaxConnectionCount; i++)
+			for (int i = 0; i < ServerOpt.MaxConnectionCount; i++)
 			{
 				// 더이상 UserToken을 미리 생성해 놓지 않는다.
 				// 다수의 클라이언트에서 접속 -> 메시지 송수신 -> 접속 해제를 반복할 경우 문제가 생김.
@@ -155,7 +170,7 @@ namespace FreeNet
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
 
-			var user_token = new SessionClient(uniqueId, PacketDispatcher);
+			var user_token = new SessionClient(uniqueId, PacketDispatcher, MessageResolver);
 			user_token.OnSessionClosed += this.OnSessionClosed;
 
 

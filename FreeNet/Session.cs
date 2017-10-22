@@ -7,7 +7,6 @@ using System.Threading;
 
 namespace FreeNet
 {
-    //TODO: 하트 비트 분리하기
     public class Session
     {
         enum State
@@ -42,7 +41,7 @@ namespace FreeNet
         public SocketAsyncEventArgs SendEventArgs { get; private set; }
 
         // 바이트를 패킷 형식으로 해석해주는 해석기.
-        MessageResolver MsgResolver;
+        IMessageResolver RefMsgResolver;
 
         // 리모트 객체. 어플리케이션 딴에서 구현하여 사용.
         IPeer Peer;
@@ -63,13 +62,13 @@ namespace FreeNet
         bool AutoHeartbeat;
 
 
-        public Session(Int64 uniqueId, IPacketDispatcher dispatcher)
+        public Session(Int64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver)
         {
             UniqueId = uniqueId;
             Dispatcher = dispatcher;
             cs_sending_queue = new object();
 
-            MsgResolver = new MessageResolver();
+            RefMsgResolver = messageResolver;
             Peer = null;
             SendingList = new List<ArraySegment<byte>>();
             LatestHeartbeatTime = DateTime.Now.Ticks;
@@ -104,7 +103,7 @@ namespace FreeNet
         /// <param name="transfered"></param>
         public void OnReceive(byte[] buffer, int offset, int transfered)
         {
-            MsgResolver.OnReceive(buffer, offset, transfered, OnMessageCompleted);
+            RefMsgResolver.OnReceive(buffer, offset, transfered, OnMessageCompleted);
         }
 
         void OnMessageCompleted(ArraySegment<byte> buffer)
@@ -140,7 +139,7 @@ namespace FreeNet
             ReceiveEventArgs.UserToken = null;
 
             SendingList.Clear();
-            MsgResolver.ClearBuffer();
+            RefMsgResolver.ClearBuffer();
 
             if (Peer != null)
             {
