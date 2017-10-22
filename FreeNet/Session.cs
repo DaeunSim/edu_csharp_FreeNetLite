@@ -34,7 +34,7 @@ namespace FreeNet
         // 하트비트 시작. S -> C
         public const short SYS_START_HEARTBEAT = -2;
         // 하트비트 갱신. C -> S
-        protected const short SYS_UPDATE_HEARTBEAT = -3;
+        public const short SYS_UPDATE_HEARTBEAT = -3;
 
         public Int64 UniqueId { get; private set; } = 0;
 
