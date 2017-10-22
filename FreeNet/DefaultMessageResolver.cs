@@ -11,7 +11,6 @@ namespace FreeNet
 	}
 
 	
-	//TODO: 이 클래스의 부모가 될 인터페이스를 만들어서 다양한 패킷 구조를 지원하도록 한다.
 	/// <summary>
 	/// [header][body] 구조를 갖는 데이터를 파싱하는 클래스.
 	/// - header : 데이터 사이즈. Defines.HEADERSIZE에 정의된 타입만큼의 크기를 갖는다.

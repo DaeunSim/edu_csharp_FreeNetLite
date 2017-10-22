@@ -29,9 +29,7 @@ namespace FreeNet
 
 		public void Connect(IPEndPoint remoteEndpoint, SocketOption socketOption)
 		{
-			ClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-			
-			// TODO: 인자로 선택할 수 있도록 하기
+			ClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);			
 			ClientSocket.NoDelay = socketOption.NoDelay;
 
 			// 비동기 접속을 위한 event args.
