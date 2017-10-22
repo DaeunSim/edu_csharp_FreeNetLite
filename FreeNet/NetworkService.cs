@@ -17,7 +17,7 @@ namespace FreeNet
 
 		public IMessageResolver MessageResolver { get; private set; }
 
-		public UserTokenManager UserManager { get; private set; }
+		public SessionManager UserManager { get; private set; }
 
 		public ServerOption ServerOpt { get; private set; }
 		Int64 SequenceId = 0;
@@ -36,7 +36,7 @@ namespace FreeNet
 								IMessageResolver userMessageResolver = null)
 		{
 			ServerOpt = serverOption;
-			UserManager = new UserTokenManager();
+			UserManager = new SessionManager();
 
 			if (userPacketDispatcher == null)
 			{
