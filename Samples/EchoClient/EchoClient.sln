@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleClient", "SampleClient.csproj", "{ADBF19EB-0285-4633-BBD5-BAB71E0D6B85}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EchoClient", "EchoClient.csproj", "{ADBF19EB-0285-4633-BBD5-BAB71E0D6B85}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FreeNetNCore", "..\FreeNetNCore\FreeNetNCore.csproj", "{E7943499-302B-41C1-9968-AC85EB11DA10}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FreeNetNCore", "..\..\FreeNetNCore\FreeNetNCore.csproj", "{E7943499-302B-41C1-9968-AC85EB11DA10}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
