@@ -6,13 +6,22 @@ namespace FreeNet
 {
     public class NetworkDefine
     {
-        // 종료 요청. S -> C
-        public const short SYS_CLOSE_REQ = 0;
-        // 종료 응답. C -> S
-        public const short SYS_CLOSE_ACK = -1;
+        public const short SYS_NTF_CONNECTED = 1;
+        
+        public const short SYS_NTF_CLOSED = 2;
+
+        //TODO: 구현하기
+        // 리모트에서 받은 패킷의 경우 이 숫자를 넘어서는 것은 에러
+        public const short SYS_NTF_MAX = 100;
+
+
         // 하트비트 시작. S -> C
-        public const short SYS_START_HEARTBEAT = -2;
+        public const short SYS_START_HEARTBEAT = 111;
         // 하트비트 갱신. C -> S
-        public const short SYS_UPDATE_HEARTBEAT = -3;
+        public const short SYS_UPDATE_HEARTBEAT = 112;
+
+
+
+        
     }
 }

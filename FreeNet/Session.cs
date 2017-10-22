@@ -42,10 +42,7 @@ namespace FreeNet
 
         // 바이트를 패킷 형식으로 해석해주는 해석기.
         IMessageResolver RefMsgResolver;
-
-        // 리모트 객체. 어플리케이션 딴에서 구현하여 사용.
-        IPeer Peer;
-
+       
         // BufferList적용을 위해 queue에서 list로 변경.
         List<ArraySegment<byte>> SendingList;
 
@@ -55,9 +52,9 @@ namespace FreeNet
         IPacketDispatcher Dispatcher;
 
         public Action<Session> OnSessionClosed;
-
+        
         // heartbeat.
-        public long LatestHeartbeatTime { get; private set; }
+        public long LatestHeartbeatTime;
         HeartbeatSender HeartbeatSender;
         bool AutoHeartbeat;
 
@@ -68,8 +65,7 @@ namespace FreeNet
             Dispatcher = dispatcher;
             cs_sending_queue = new object();
 
-            RefMsgResolver = messageResolver;
-            Peer = null;
+            RefMsgResolver = messageResolver;        
             SendingList = new List<ArraySegment<byte>>();
             LatestHeartbeatTime = DateTime.Now.Ticks;
 
@@ -81,13 +77,11 @@ namespace FreeNet
             CurrentState = State.Connected;
             IsClosed = 0;
             AutoHeartbeat = true;
+            
+            var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CONNECTED);
+            Dispatcher.IncomingPacket(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
         }
-
-        public void SetPeer(IPeer peer)
-        {
-            Peer = peer;
-        }
-
+        
         public void SetEventArgs(SocketAsyncEventArgs receive_event_args, SocketAsyncEventArgs send_event_args)
         {
             ReceiveEventArgs = receive_event_args;
@@ -108,11 +102,6 @@ namespace FreeNet
 
         void OnMessageCompleted(ArraySegment<byte> buffer)
         {
-            if (Peer == null)
-            {
-                return;
-            }
-
             // 로직 스레드의 큐를 타고 호출되도록 함.
             Dispatcher.IncomingPacket(this, buffer);
         }
@@ -141,11 +130,11 @@ namespace FreeNet
             SendingList.Clear();
             RefMsgResolver.ClearBuffer();
 
-            if (Peer != null)
-            {
-                var msg = Packet.Create((short)-1);
-                Dispatcher.IncomingPacket(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));                
-            }
+
+            OnSessionClosed(this);
+
+            var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CLOSED);
+            Dispatcher.IncomingPacket(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));                
         }
 
 
@@ -299,7 +288,7 @@ namespace FreeNet
                     return;
                 }
 
-                this.CurrentState = State.ReserveClosing;
+                CurrentState = State.ReserveClosing;
             }
             // throws if client process has already closed
             catch (Exception)
@@ -308,69 +297,16 @@ namespace FreeNet
             }
         }
 
-
-        // 아래 기능을 다른 클래스에 넣자
-        // 이 함수는 클라이언트용 함수다. 예제 코드로 넘기자
-        //TODO: 이 클래스에서 메시지를 처리하지 않도록 한다. 사용 안하면 삭제하도록한다.
-        //       허트 비트 기능 이식할 때까지는 남기기
-        public bool OnSystemPacket(Packet msg)
+        public void StartHeartbeat(uint interval)
         {
-            // active close를 위한 코딩.
-            //   서버에서 종료하라고 연락이 왔는지 체크한다.
-            //   만약 종료신호가 맞다면 disconnect를 호출하여 받은쪽에서 먼저 종료 요청을 보낸다.
-            switch (msg.ProtocolId)
+            HeartbeatSender = new HeartbeatSender(this, interval);
+
+            if (AutoHeartbeat)
             {
-                case NetworkDefine.SYS_CLOSE_REQ:
-                    DisConnect();
-                    return true;
-
-                case NetworkDefine.SYS_START_HEARTBEAT:
-                    {
-                        // 순서대로 파싱해야 하므로 프로토콜 아이디는 버린다.
-                        msg.PopProtocolId();
-                        // 전송 인터벌.
-                        byte interval = msg.PopByte();
-                        this.HeartbeatSender = new HeartbeatSender(this, interval);
-
-                        if (this.AutoHeartbeat)
-                        {
-                            StartHeartbeat();
-                        }
-                    }
-                    return true;
-
-                case NetworkDefine.SYS_UPDATE_HEARTBEAT:
-                    //Console.WriteLine("heartbeat : " + DateTime.Now);
-                    this.LatestHeartbeatTime = DateTime.Now.Ticks;
-                    return true;
+                StartHeartbeat();
             }
-
-
-            if (Peer != null)
-            {
-                try
-                {
-                    if(msg.ProtocolId == NetworkDefine.SYS_CLOSE_ACK)
-                    {
-                        Peer.OnRemoved();
-
-                        if (OnSessionClosed != null)
-                        {
-                            OnSessionClosed(this);
-                        }
-
-                        return true;
-                    }                   
-                }
-                catch (Exception)
-                {
-                    Close();
-                }
-            }
-
-            return false;
         }
-
+        
         public bool IsConnected()
         {
             return CurrentState == State.Connected;

@@ -6,40 +6,21 @@ namespace EchoServerIOThreadPacketProcess
 	/// <summary>
 	/// 하나의 session객체를 나타낸다.
 	/// </summary>
-	class GameUser : IPeer
+	class GameUser
 	{
-		SessionClient Session;
+		Session Session;
 
-		public GameUser(SessionClient session)
+		public GameUser(Session session)
 		{
 			Session = session;
-			Session.SetPeer(this);
 		}
-
-		void IPeer.OnRemoved()
-		{
-			//Console.WriteLine("The client disconnected.");
-
-			Program.RemoveUser(this);
-		}
-
+				
 		public void Send(Packet pkt)
 		{
 			pkt.RecordSize();
 			Session.PreSend(new ArraySegment<byte>(pkt.Buffer, 0, pkt.Position));
 		}
-				
-		public void DisConnect()
-		{
-			Session.Ban();
-		}
-
-		//public bool OnMessage(Packet pkt)
-		//{
-  //          return Session.OnSystemPacket(pkt);
-
-  //      }
-
+		
 
 		void Send(ArraySegment<byte> data)
 		{

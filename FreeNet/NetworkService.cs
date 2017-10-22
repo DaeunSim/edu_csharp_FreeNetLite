@@ -12,10 +12,7 @@ namespace FreeNet
 	{
 		SocketAsyncEventArgsPool ReceiveEventArgsPool;
 		SocketAsyncEventArgsPool SendEventArgsPool;
-
-		public Action<SessionClient> SessionClientCreatedCallBack = null;
-		public Action<SessionServer> SessionServerCreatedCallBack = null;
-
+				
 		public IPacketDispatcher PacketDispatcher { get; private set; }
 
 		public IMessageResolver MessageResolver { get; private set; }
@@ -139,7 +136,8 @@ namespace FreeNet
 		/// <param name="socket"></param>
 		public void OnConnectCompleted(Socket socket, Session token)
 		{
-			token.OnSessionClosed += this.OnSessionClosed;
+			token.OnSessionClosed += OnSessionClosed;
+
 			UserManager.Add(token);
 
 			// SocketAsyncEventArgsPool에서 빼오지 않고 그때 그때 할당해서 사용한다.
@@ -169,9 +167,8 @@ namespace FreeNet
 		{			
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
-
-			var user_token = new SessionClient(uniqueId, PacketDispatcher, MessageResolver);
-			user_token.OnSessionClosed += this.OnSessionClosed;
+			var user_token = new Session(uniqueId, PacketDispatcher, MessageResolver);
+			user_token.OnSessionClosed += OnSessionClosed;
 
 
 			UserManager.Add(user_token);
@@ -185,8 +182,6 @@ namespace FreeNet
 						
 
 			user_token.OnConnected();
-
-			SessionClientCreatedCallBack?.Invoke(user_token);
 
 			BeginReceive(client_socket, receive_args, send_args);
 
@@ -271,7 +266,7 @@ namespace FreeNet
 			}
 		}
 
-		void OnSessionClosed(Session token)
+		public void OnSessionClosed(Session token)
 		{
 			UserManager.Remove(token);
 
