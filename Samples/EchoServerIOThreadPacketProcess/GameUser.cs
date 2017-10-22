@@ -34,9 +34,11 @@ namespace EchoServerIOThreadPacketProcess
 			Session.Ban();
 		}
 
-		public void OnMessage(Packet pkt)
-		{			
-		}
+		//public bool OnMessage(Packet pkt)
+		//{
+  //          return Session.OnSystemPacket(pkt);
+
+  //      }
 
 
 		void Send(ArraySegment<byte> data)

@@ -22,7 +22,7 @@ namespace FreeNet
 		/// -> 로직 스레드에서 호출됨. 로직 스레드는 싱글 스레드로 돌아감.
 		/// </summary>
 		/// <param name="pkt"></param>
-		void OnMessage(Packet pkt);
+		//void OnMessage(Packet pkt);
 
 
 		/// <summary>

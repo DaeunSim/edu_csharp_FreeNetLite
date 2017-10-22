@@ -82,7 +82,10 @@ namespace SampleServer
                     break;
                 default:
                     {
-                        Console.WriteLine("Unknown protocol id " + protocol);
+                        if (packet.Owner.OnSystemPacket(packet) == false)
+                        {
+                            Console.WriteLine("Unknown protocol id " + protocol);
+                        }
                     }
                     break;
             }
