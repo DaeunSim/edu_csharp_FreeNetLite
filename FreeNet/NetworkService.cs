@@ -51,7 +51,7 @@ namespace FreeNet
 
 			if (userMessageResolver == null)
 			{
-				MessageResolver = new MessageResolver(ServerOpt.MaxPacketSize * 3);
+				MessageResolver = new DefaultMessageResolver(ServerOpt.MaxPacketSize * 3);
 			}
 			else
 			{

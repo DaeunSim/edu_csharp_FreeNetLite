@@ -19,7 +19,7 @@ namespace FreeNet
 	///				본문의 크기가 Int16.Max값을 넘지 않는다면 2바이트로 처리하는것이 좋을것 같다.
 	/// - body : 메시지 본문.
 	/// </summary>
-	class MessageResolver : IMessageResolver
+	class DefaultMessageResolver : IMessageResolver
 	{
 		// 진행중인 버퍼.
 		byte[] MessageBuffer;
@@ -35,7 +35,7 @@ namespace FreeNet
 		int RemainBytes = 0;
 
 
-		public MessageResolver(int bufferSize)
+		public DefaultMessageResolver(int bufferSize)
 		{
 			MessageBuffer = new byte[bufferSize];
 		}
