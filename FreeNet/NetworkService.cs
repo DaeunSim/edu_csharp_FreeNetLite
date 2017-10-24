@@ -20,7 +20,7 @@ namespace FreeNet
 		public SessionManager UserManager { get; private set; }
 
 		public ServerOption ServerOpt { get; private set; }
-		Int64 SequenceId = 0;
+		Int64 SequenceId = 1000;
 
 		/// <summary>
 		/// 로직 스레드를 사용하려면 use_logicthread를 true로 설정한다.

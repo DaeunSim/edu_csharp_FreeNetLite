@@ -5,12 +5,11 @@ using System.Text;
 
 namespace FreeNet
 {
-	//TODO: Pakcet 클래스는 IPacket 클래스를 상속 하도록 한다.
 	//TODO: ZeroFormat 혹은 MsgPack을 사용하는 Packet 클래스를 만든다.
 	/// <summary>
 	/// byte[] 버퍼를 참조로 보관하여 pop_xxx 매소드 호출 순서대로 데이터 변환을 수행한다.
 	/// </summary>
-	public class Packet
+	public class Packet : IPacket
 	{
 		public Session Owner { get; private set; }
 		public byte[] Buffer { get; private set; }
@@ -55,9 +54,10 @@ namespace FreeNet
 			Owner = owner;
 		}
 
+		//TODD: 버퍼 크기 설정할 수 있도록 한다.
 		public Packet()
 		{
-			this.Buffer = new byte[1024];
+			Buffer = new byte[1024];
 		}
 
 		public Int16 PopProtocolId()

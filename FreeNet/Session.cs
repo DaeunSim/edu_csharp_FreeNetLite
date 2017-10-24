@@ -79,7 +79,7 @@ namespace FreeNet
             AutoHeartbeat = true;
             
             var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CONNECTED);
-            Dispatcher.IncomingPacket(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
         }
         
         public void SetEventArgs(SocketAsyncEventArgs receive_event_args, SocketAsyncEventArgs send_event_args)
@@ -103,7 +103,7 @@ namespace FreeNet
         void OnMessageCompleted(ArraySegment<byte> buffer)
         {
             // 로직 스레드의 큐를 타고 호출되도록 함.
-            Dispatcher.IncomingPacket(this, buffer);
+            Dispatcher.IncomingPacket(false, this, buffer);
         }
 
         public void Close()
@@ -134,7 +134,7 @@ namespace FreeNet
             OnSessionClosed(this);
 
             var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CLOSED);
-            Dispatcher.IncomingPacket(this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));                
+            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));                
         }
 
 
