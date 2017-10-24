@@ -16,18 +16,23 @@ namespace EchoServerIOThreadPacketProcess
         {
         }
 
-        public Queue<Packet> DispatchAll()
-        {
-            return null;
-        }
+        public Queue<Packet> DispatchAll() { return null; }
 
-        public void IncomingPacket(Session user, ArraySegment<byte> buffer)
+        public void IncomingPacket(bool IsSystem, Session user, ArraySegment<byte> buffer)
         {
             var packet = new Packet(buffer, user);
 
             var protocol = (PROTOCOL_ID)packet.PopProtocolId();
             //Console.WriteLine("------------------------------------------------------");
             //Console.WriteLine("protocol id " + protocol);
+
+            if (IsSystem == false && packet.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
+            {
+                //TODO: 로그 남기기
+                // 시스템만 보내어야할 패킷을 상대방이 보냈음. 해킹 의심
+                return;
+            }
+
 
             switch (protocol)
             {

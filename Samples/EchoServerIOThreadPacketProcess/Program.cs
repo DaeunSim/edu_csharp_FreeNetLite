@@ -7,17 +7,17 @@ namespace EchoServerIOThreadPacketProcess
 	{
 		static void Main(string[] args)
 		{
-            // IoThreadPacketDispatcher 에서 바로 패킷을 처리한다. 즉 멀티스레드로 패킷을 처리한다.
-            var packetDispatcher = new IoThreadPacketDispatcher();
+			// IoThreadPacketDispatcher 에서 바로 패킷을 처리한다. 즉 멀티스레드로 패킷을 처리한다.
+			var packetDispatcher = new IoThreadPacketDispatcher();
 
 
-            var serverOpt = new FreeNet.ServerOption();
-            serverOpt.MaxConnectionCount = 10000;
-            serverOpt.ReceiveBufferSize = 1024;
-                        
+			var serverOpt = new FreeNet.ServerOption();
+			serverOpt.MaxConnectionCount = 10000;
+			serverOpt.ReceiveBufferSize = 1024;
+						
 			var service = new FreeNet.NetworkService(serverOpt);
-            service.Initialize();
-                        
+			service.Initialize();
+						
 			var socketOpt = new FreeNet.SocketOption();
 			socketOpt.NoDelay = true;
 
@@ -35,8 +35,10 @@ namespace EchoServerIOThreadPacketProcess
 				{
 					Console.WriteLine(service.UserManager.GetTotalCount());
 				}
-				else if (input.Equals("exit"))
+				else if (input.Equals("Exit Process"))
 				{
+					service.Stop();
+
 					Console.WriteLine("Exit !!!");
 					break;
 				}

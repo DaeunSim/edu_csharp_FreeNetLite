@@ -24,16 +24,16 @@ namespace FreeNet
         {
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.
-            Packet msg = new Packet(buffer, user);
+            var packet = new Packet(buffer, user);
 
-            if(IsSystem == false && msg.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
+            if(IsSystem == false && packet.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
             {
                 //TODO: 로그 남기기
                 // 시스템만 보내어야할 패킷을 상대방이 보냈음. 해킹 의심
                 return;
             }
 
-            MessageQueue.Enqueue(msg);
+            MessageQueue.Enqueue(packet);
         }
         
         public Queue<Packet> DispatchAll()
