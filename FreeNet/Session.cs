@@ -9,32 +9,23 @@ namespace FreeNet
 {
     public class Session
     {
-        enum State
-        {
-            // 대기중.
-            Idle,
-
-            // 연결됨.
-            Connected,
-
-            // 종료가 예약됨.
-            // sending_list에 대기중인 상태에서 disconnect를 호출한 경우,
-            // 남아있는 패킷을 모두 보낸 뒤 끊도록 하기 위한 상태값.
-            ReserveClosing,
-
-            // 소켓이 완전히 종료됨.
-            Closed,
-        }
-
-        
+        const int STATE_IDLE = 0;
+        const int STATE_CONNECTED = 0;
+        const int STATE_RESERVECLOSING = 0;
+        const int STATE_CLOSED = 0;
+                
         public Int64 UniqueId { get; private set; } = 0;
+
+        ServerOption ServerOpt;
 
         // close중복 처리 방지를 위한 플래그.
         // 0 = 연결된 상태.
         // 1 = 종료된 상태.
-        private int IsClosed;
+        int IsClosed;
+        int CurrentState = STATE_IDLE;
 
-        State CurrentState;
+        public Int64 ReserveClosingMillSec { get; private set; } = 0;
+        
         public Socket Sock { get; set; }
 
         public SocketAsyncEventArgs ReceiveEventArgs { get; private set; }
@@ -59,22 +50,21 @@ namespace FreeNet
         bool AutoHeartbeat;
 
 
-        public Session(Int64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver)
+        public Session(Int64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver, ServerOption serverOption)
         {
             UniqueId = uniqueId;
             Dispatcher = dispatcher;
+            ServerOpt = serverOption;
             cs_sending_queue = new object();
 
             RefMsgResolver = messageResolver;        
             SendingList = new List<ArraySegment<byte>>();
             LatestHeartbeatTime = DateTime.Now.Ticks;
-
-            CurrentState = State.Idle;
         }
 
         public void OnConnected()
         {
-            CurrentState = State.Connected;
+            CurrentState = STATE_CONNECTED;
             IsClosed = 0;
             AutoHeartbeat = true;
             
@@ -115,13 +105,15 @@ namespace FreeNet
                 return;
             }
 
-            if (CurrentState == State.Closed)
+            if (CurrentState == STATE_CLOSED)
             {
                 // already closed.
                 return;
             }
 
-            CurrentState = State.Closed;
+            CurrentState = STATE_CLOSED;
+            ReserveClosingMillSec = 0;
+
             Sock.Close();
             Sock = null;
 
@@ -150,6 +142,11 @@ namespace FreeNet
         /// <param name="msg"></param>
         public void PreSend(ArraySegment<byte> data)
         {
+            if(IsConnected() == false)
+            {
+                return;
+            }
+
             lock (cs_sending_queue)
             {
                 SendingList.Add(data);
@@ -178,6 +175,11 @@ namespace FreeNet
         /// </summary>
         void StartSend()
         {
+            if (IsConnected() == false)
+            {
+                return;
+            }
+
             //TODO: 한번에 보낼 수 있는 크기만(MSS 값 등)보내도록 한다.
             try
             {
@@ -193,11 +195,7 @@ namespace FreeNet
             }
             catch (Exception e)
             {
-                if (this.Sock == null)
-                {
-                    Close();
-                    return;
-                }
+                SetReserveClosing(ServerOpt.ReserveClosingWaitMilliSecond);
 
                 Console.WriteLine("send error!! close socket. " + e.Message);
                 throw new Exception(e.Message, e);
@@ -214,6 +212,11 @@ namespace FreeNet
         /// <param name="e"></param>
         public void ProcessSend(SocketAsyncEventArgs e)
         {
+            if(IsConnected() == false)
+            {
+                return;
+            }
+
             if (e.BytesTransferred <= 0 || e.SocketError != SocketError.Success)
             {
                 // 연결이 끊겨서 이미 소켓이 종료된 경우일 것이다.
@@ -273,12 +276,6 @@ namespace FreeNet
 
                 // 다 보냈고 더이상 보낼것도 없다.
                 this.SendingList.Clear();
- 
-                // 종료가 예약된 경우, 보낼건 다 보냈으니 진짜 종료 처리를 진행한다.
-                if (this.CurrentState == State.ReserveClosing)
-                {
-                    this.Sock.Shutdown(SocketShutdown.Send);
-                }
             }
         }
 
@@ -289,23 +286,15 @@ namespace FreeNet
         /// </summary>
         public void DisConnect(bool isForce)
         {
-            // close the socket associated with the client
-            try
+            SetReserveClosing(ServerOpt.ReserveClosingWaitMilliSecond);
+        }
+
+
+        public void SetReserveClosing(int waitMilliSecond)
+        {
+            if (Interlocked.CompareExchange(ref CurrentState, STATE_RESERVECLOSING, STATE_CONNECTED) == STATE_CONNECTED)
             {
-                if (isForce == false && SendingList.Count <= 0)
-                {
-                    Sock.Shutdown(SocketShutdown.Send);
-                    CurrentState = State.ReserveClosing;
-                }
-                else
-                {
-                    Close();
-                }                
-            }
-            // throws if client process has already closed
-            catch (Exception)
-            {
-                Close();
+                ReserveClosingMillSec = (DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond) + waitMilliSecond;
             }
         }
 
@@ -321,7 +310,7 @@ namespace FreeNet
         
         public bool IsConnected()
         {
-            return CurrentState == State.Connected;
+            return CurrentState == STATE_CONNECTED;
         }
 
 

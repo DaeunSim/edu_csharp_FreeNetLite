@@ -16,12 +16,15 @@ namespace FreeNet
 		public IPacketDispatcher PacketDispatcher { get; private set; }
 
 		public IMessageResolver MessageResolver { get; private set; }
-
+		
 		public SessionManager UserManager { get; private set; }
 
 		public ServerOption ServerOpt { get; private set; }
 
 		Int64 SequenceId = 1000;
+
+		ReserveClosingProcess ReserveClosingProc = new ReserveClosingProcess();
+
 
 		/// <summary>
 		/// 로직 스레드를 사용하려면 use_logicthread를 true로 설정한다.
@@ -118,7 +121,15 @@ namespace FreeNet
 					SendEventArgsPool.Push(arg);
 				}
 			}
+
+
+			ReserveClosingProc.Start(ServerOpt.ReserveClosingWaitMilliSecond);
 		}
+
+        public void Stop()
+        {
+            ReserveClosingProc.Stop();
+        }
 
 		public void Listen(string host, int port, int backlog, SocketOption socketOption)
 		{
@@ -168,7 +179,7 @@ namespace FreeNet
 		{			
 			// UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
 			var uniqueId = Interlocked.Increment(ref SequenceId);
-			var user_token = new Session(uniqueId, PacketDispatcher, MessageResolver);
+			var user_token = new Session(uniqueId, PacketDispatcher, MessageResolver, ServerOpt);
 			user_token.OnSessionClosed += OnSessionClosed;
 
 
@@ -196,6 +207,12 @@ namespace FreeNet
 		{
 			// receive_args, send_args 아무곳에서나 꺼내와도 된다. 둘다 동일한 CUserToken을 물고 있다.
 			Session token = receive_args.UserToken as Session;
+
+			if(token == null || token.IsConnected() == false)
+			{
+				return;
+			}
+
 			token.SetEventArgs(receive_args, send_args);
 			// 생성된 클라이언트 소켓을 보관해 놓고 통신할 때 사용한다.
 			token.Sock = socket;
@@ -226,13 +243,20 @@ namespace FreeNet
 		// <param name="e">SocketAsyncEventArg associated with the completed send operation</param>
 		void SendCompleted(object sender, SocketAsyncEventArgs e)
 		{
+			Session token = e.UserToken as Session;
+
+			if(token == null || token.IsConnected() == false)
+			{
+				return;
+			}
+
 			try
 			{
-				Session token = e.UserToken as Session;
 				token.ProcessSend(e);
 			}
 			catch (Exception)
 			{
+				token.SetReserveClosing(ServerOpt.ReserveClosingWaitMilliSecond);
 			}
 		}
 
@@ -240,8 +264,16 @@ namespace FreeNet
 		// If the remote host closed the connection, then the socket is closed.  
 		//
 		private void ProcessReceive(SocketAsyncEventArgs e)
-		{
+		{   
+			//TODO: 중복 코드. 함수 하나로 만들기
 			Session token = e.UserToken as Session;
+
+			if(token == null || token.IsConnected() == false)
+			{
+				return;
+			}
+			///////////////////////////////////////////
+
 			if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
 			{
 				token.OnReceive(e.Buffer, e.Offset, e.BytesTransferred);
@@ -256,14 +288,8 @@ namespace FreeNet
 			}
 			else
 			{
-				try
-				{
-					token.Close();
-				}
-				catch (Exception)
-				{
-					Console.WriteLine("Already closed this socket.");
-				}
+				token.SetReserveClosing(ServerOpt.ReserveClosingWaitMilliSecond);
+
 			}
 		}
 

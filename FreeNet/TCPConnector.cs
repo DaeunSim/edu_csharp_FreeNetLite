@@ -22,10 +22,10 @@ namespace FreeNet
 
 		NetworkService RefNetworkService;
 
-        Int64 SequenceId = 0;
-        
+		Int64 SequenceId = 0;
+		
 
-        public TCPConnector(NetworkService networkService)
+		public TCPConnector(NetworkService networkService)
 		{
 			RefNetworkService = networkService;
 		}
@@ -53,8 +53,8 @@ namespace FreeNet
 		{
 			if (e.SocketError == SocketError.Success)
 			{
-                var uniqueId = Interlocked.Increment(ref SequenceId);
-                Session token = new Session(uniqueId, RefNetworkService.PacketDispatcher, RefNetworkService.MessageResolver);
+				var uniqueId = Interlocked.Increment(ref SequenceId);
+				Session token = new Session(uniqueId, RefNetworkService.PacketDispatcher, RefNetworkService.MessageResolver, RefNetworkService.ServerOpt);
 
 				// 데이터 수신 준비.
 				RefNetworkService.OnConnectCompleted(ClientSocket, token);

@@ -39,7 +39,10 @@ namespace SampleServer
 				}
 				else if (input.Equals("exit"))
 				{
+					Console.WriteLine("Exit Process  !!!");
+
 					packetProcess.Stop();
+					service.Stop();
 
 					Console.WriteLine("Exit !!!");
 					break;
