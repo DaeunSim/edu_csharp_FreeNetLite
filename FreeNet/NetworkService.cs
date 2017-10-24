@@ -20,6 +20,7 @@ namespace FreeNet
 		public SessionManager UserManager { get; private set; }
 
 		public ServerOption ServerOpt { get; private set; }
+
 		Int64 SequenceId = 1000;
 
 		/// <summary>

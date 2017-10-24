@@ -106,6 +106,7 @@ namespace FreeNet
             Dispatcher.IncomingPacket(false, this, buffer);
         }
 
+        //TODO: 스레드 세이프?
         public void Close()
         {
             // 중복 수행을 막는다.
@@ -177,6 +178,7 @@ namespace FreeNet
         /// </summary>
         void StartSend()
         {
+            //TODO: 한번에 보낼 수 있는 크기만(MSS 값 등)보내도록 한다.
             try
             {
                 // 성능 향상을 위해 SetBuffer에서 BufferList를 사용하는 방식으로 변경함.
@@ -219,7 +221,7 @@ namespace FreeNet
                 return;
             }
 
-            lock (this.cs_sending_queue)
+            lock (cs_sending_queue)
             {
                 // 리스트에 들어있는 데이터의 총 바이트 수.
                 var size = this.SendingList.Sum(obj => obj.Count);
@@ -227,6 +229,9 @@ namespace FreeNet
                 // 전송이 완료되기 전에 추가 전송 요청을 했다면 sending_list에 무언가 더 들어있을 것이다.
                 if (e.BytesTransferred != size)
                 {
+                    // 신 버전
+
+                    // 구 버전
                     //todo:세그먼트 하나를 다 못보낸 경우에 대한 처리도 해줘야 함.
                     // 일단 close시킴.
                     if (e.BytesTransferred < this.SendingList[0].Count)
@@ -256,6 +261,11 @@ namespace FreeNet
                     // 전송 완료된것은 리스트에서 삭제한다.
                     this.SendingList.RemoveRange(0, sent_index + 1);
 
+
+
+
+
+
                     // 나머지 데이터들을 한방에 보낸다.
                     StartSend();
                     return;
@@ -277,18 +287,20 @@ namespace FreeNet
         /// 연결을 종료한다.
         /// 주로 클라이언트에서 종료할 때 호출한다.
         /// </summary>
-        public void DisConnect()
+        public void DisConnect(bool isForce)
         {
             // close the socket associated with the client
             try
             {
-                if (this.SendingList.Count <= 0)
+                if (isForce == false && SendingList.Count <= 0)
                 {
-                    this.Sock.Shutdown(SocketShutdown.Send);
-                    return;
+                    Sock.Shutdown(SocketShutdown.Send);
+                    CurrentState = State.ReserveClosing;
                 }
-
-                CurrentState = State.ReserveClosing;
+                else
+                {
+                    Close();
+                }                
             }
             // throws if client process has already closed
             catch (Exception)

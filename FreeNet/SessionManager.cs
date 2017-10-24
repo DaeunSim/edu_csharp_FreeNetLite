@@ -77,8 +77,7 @@ namespace FreeNet
                     continue;
                 }
 
-                //TODO: 여기서 불러도 스레드 세이프 한지 꼼꼼하게 알아보기
-                user.DisConnect();
+                user.DisConnect(true);
             }            
         }
 

@@ -135,15 +135,9 @@ namespace FreeNet
 				{
 					OnNewClientCallback(client_socket, e.UserToken);
 				}
-
-				// 다음 연결을 받아들인다.
-				FlowControlEvent.Set();
-
-				return;
 			}
 			else
 			{
-				//TODO: Accept 실패 처리. 
 				//TODO: 로그 라이브러리 사용하기
 				Console.WriteLine("Failed to accept client. " + e.SocketError);
 			}
