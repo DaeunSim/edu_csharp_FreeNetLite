@@ -4,6 +4,9 @@ FreeNet - .Net Core
 FreeNet은 .Net Standard 2,0 버전이고, SampleServer는 .Net Core 2.0 버전이다.  
 (그리고 코드 리팩토링도 하였다)    
    
+**현재 대규모 수정 중이다. 안정성 테스트를 하지 못했다(2017-10-25)**     
+   
+=========   
 C# Network library. Asynchronous. TCP. GameServer.
 
 Version

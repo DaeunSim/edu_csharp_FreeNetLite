@@ -96,7 +96,6 @@ namespace FreeNet
             Dispatcher.IncomingPacket(false, this, buffer);
         }
 
-        //TODO: 스레드 세이프?
         public void Close()
         {
             // 중복 수행을 막는다.
@@ -181,16 +180,18 @@ namespace FreeNet
             }
 
             //TODO: 한번에 보낼 수 있는 크기만(MSS 값 등)보내도록 한다.
+            //      1) multi buffer가 아닌 single buffer를 사용하도록 한다. or
+            //      2) SendingList를 2개 가지고 있으면서 하나에는 꼭 MTU크기만 가지도록 한다.  이 방법을 사용하자
             try
             {
                 // 성능 향상을 위해 SetBuffer에서 BufferList를 사용하는 방식으로 변경함.
-                this.SendEventArgs.BufferList = this.SendingList;
+                SendEventArgs.BufferList = SendingList;
 
                 // 비동기 전송 시작.
-                bool pending = this.Sock.SendAsync(this.SendEventArgs);
+                bool pending = Sock.SendAsync(SendEventArgs);
                 if (!pending)
                 {
-                    ProcessSend(this.SendEventArgs);
+                    ProcessSend(SendEventArgs);
                 }
             }
             catch (Exception e)
