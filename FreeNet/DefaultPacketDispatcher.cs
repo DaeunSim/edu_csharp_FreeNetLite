@@ -28,7 +28,7 @@ namespace FreeNet
 
             if(IsSystem == false && packet.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
             {
-                //TODO: 로그 남기기
+                //TODO: 로그 남기기 serilog otr nlog
                 // 시스템만 보내어야할 패킷을 상대방이 보냈음. 해킹 의심
                 return;
             }

@@ -16,6 +16,8 @@ namespace FreeNet
                 
         public Int64 UniqueId { get; private set; } = 0;
 
+        public bool IsClient { get; private set; } = true;
+
         ServerOption ServerOpt;
 
         // close중복 처리 방지를 위한 플래그.
@@ -36,9 +38,9 @@ namespace FreeNet
        
         // BufferList적용을 위해 queue에서 list로 변경.
         List<ArraySegment<byte>> SendingList;
-
+        
         // sending_list lock처리에 사용되는 객체.
-        private object cs_sending_queue;
+        SpinLock LOCK_SENDING_QUEUE = new SpinLock();
 
         IPacketDispatcher Dispatcher;
 
@@ -50,15 +52,17 @@ namespace FreeNet
         bool AutoHeartbeat;
 
 
-        public Session(Int64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver, ServerOption serverOption)
+        public Session(bool isClient, Int64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver, ServerOption serverOption)
         {
+            IsClient = isClient;
             UniqueId = uniqueId;
             Dispatcher = dispatcher;
             ServerOpt = serverOption;
-            cs_sending_queue = new object();
+            
+            RefMsgResolver = messageResolver;
 
-            RefMsgResolver = messageResolver;        
             SendingList = new List<ArraySegment<byte>>();
+            
             LatestHeartbeatTime = DateTime.Now.Ticks;
         }
 
@@ -120,6 +124,7 @@ namespace FreeNet
             ReceiveEventArgs.UserToken = null;
 
             SendingList.Clear();
+            
             RefMsgResolver.ClearBuffer();
 
 
@@ -145,9 +150,11 @@ namespace FreeNet
             {
                 return;
             }
-
-            lock (cs_sending_queue)
+                        
+            var gotLock = false;
+            try
             {
+                LOCK_SENDING_QUEUE.Enter(ref gotLock);
                 SendingList.Add(data);
 
                 if (SendingList.Count > 1)
@@ -156,9 +163,18 @@ namespace FreeNet
                     // 현재 수행중인 SendAsync가 완료된 이후에 큐를 검사하여 데이터가 있으면 SendAsync를 호출하여 전송해줄 것이다.
                     return;
                 }
-            }
 
-            StartSend();
+
+                StartSend();
+            }
+            finally
+            {
+                // Only give up the lock if you actually acquired it
+                if (gotLock)
+                {
+                    LOCK_SENDING_QUEUE.Exit();
+                }
+            }            
         }
 
 
@@ -179,14 +195,10 @@ namespace FreeNet
                 return;
             }
 
-            //TODO: 한번에 보낼 수 있는 크기만(MSS 값 등)보내도록 한다.
-            //      1) multi buffer가 아닌 single buffer를 사용하도록 한다. or
-            //      2) SendingList를 2개 가지고 있으면서 하나에는 꼭 MTU크기만 가지도록 한다.  이 방법을 사용하자
             try
             {
-                // 성능 향상을 위해 SetBuffer에서 BufferList를 사용하는 방식으로 변경함.
-                SendEventArgs.BufferList = SendingList;
-
+                SetSendEventArgsBufferList(SendingList, SendEventArgs.BufferList);
+                
                 // 비동기 전송 시작.
                 bool pending = Sock.SendAsync(SendEventArgs);
                 if (!pending)
@@ -203,8 +215,30 @@ namespace FreeNet
             }
         }
 
-        //static int sent_count = 0;
+        int SetSendEventArgsBufferList(List<ArraySegment<byte>> sourceList, IList<ArraySegment<byte>> targetList)
+        {
+            int copyIndex = 0;
+            var dataSize = 0;
+            int mtuSize = ServerOpt.SendPacketMTUSize(IsClient);
 
+            foreach (var sendInfo in sourceList)
+            {
+                var temp = dataSize + sendInfo.Count;
+                if (temp <= mtuSize)
+                {
+                    ++copyIndex;
+                    dataSize += sendInfo.Count;
+                }
+            }
+
+            for (int i = 0; i < copyIndex; ++i)
+            {
+                targetList.Add(sourceList[i]);
+            }
+
+            return copyIndex;
+        }
+        
         static object cs_count = new object();
         
         /// <summary>
@@ -225,34 +259,24 @@ namespace FreeNet
                 return;
             }
 
-            lock (cs_sending_queue)
+            var gotLock = false;
+            try
             {
-                // 리스트에 들어있는 데이터의 총 바이트 수.
-                var size = this.SendingList.Sum(obj => obj.Count);
+                LOCK_SENDING_QUEUE.Enter(ref gotLock);
 
+                // 리스트에 들어있는 데이터의 총 바이트 수.
+                var size = SendingList.Sum(obj => obj.Count);
+
+                // MTU 이하로만 보내므로 이 조건문 안에 들어올 수 있다.
                 // 전송이 완료되기 전에 추가 전송 요청을 했다면 sending_list에 무언가 더 들어있을 것이다.
                 if (e.BytesTransferred != size)
                 {
-                    // 신 버전
-
-                    // 구 버전
-                    //todo:세그먼트 하나를 다 못보낸 경우에 대한 처리도 해줘야 함.
-                    // 일단 close시킴.
-                    if (e.BytesTransferred < this.SendingList[0].Count)
-                    {
-                        string error = string.Format("Need to send more! transferred {0},  packet size {1}", e.BytesTransferred, size);
-                        Console.WriteLine(error);
-
-                        Close();
-                        return;
-                    }
-
                     // 보낸 만큼 빼고 나머지 대기중인 데이터들을 한방에 보내버린다.
                     int sent_index = 0;
                     int sum = 0;
-                    for (int i = 0; i < this.SendingList.Count; ++i)
+                    for (int i = 0; i < SendingList.Count; ++i)
                     {
-                        sum += this.SendingList[i].Count;
+                        sum += SendingList[i].Count;
                         if (sum <= e.BytesTransferred)
                         {
                             // 여기 까지는 전송 완료된 데이터 인덱스.
@@ -262,21 +286,26 @@ namespace FreeNet
 
                         break;
                     }
+
                     // 전송 완료된것은 리스트에서 삭제한다.
-                    this.SendingList.RemoveRange(0, sent_index + 1);
-
-
-
-
-
+                    SendingList.RemoveRange(0, sent_index + 1);
 
                     // 나머지 데이터들을 한방에 보낸다.
                     StartSend();
-                    return;
                 }
-
-                // 다 보냈고 더이상 보낼것도 없다.
-                this.SendingList.Clear();
+                else
+                {
+                    // 다 보냈고 더이상 보낼것도 없다.
+                    SendingList.Clear();
+                }
+            }
+            finally
+            {
+                // Only give up the lock if you actually acquired it
+                if (gotLock)
+                {
+                    LOCK_SENDING_QUEUE.Exit();
+                }
             }
         }
 
