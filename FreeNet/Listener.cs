@@ -61,8 +61,8 @@ namespace FreeNet
 			}
 			catch (Exception e)
 			{
-				//TODO: 로그 라이브러리 사용하기
-				Console.WriteLine(e.Message);
+                //TODO: 로그 남기기
+                Console.WriteLine(e.Message);
 			}
 		}
 
@@ -138,8 +138,8 @@ namespace FreeNet
 			}
 			else
 			{
-				//TODO: 로그 라이브러리 사용하기
-				Console.WriteLine("Failed to accept client. " + e.SocketError);
+                //TODO: 로그 남기기
+                Console.WriteLine("Failed to accept client. " + e.SocketError);
 			}
 
 			// 다음 연결을 받아들인다.

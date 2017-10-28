@@ -28,7 +28,12 @@ namespace FreeNet
 
             if(IsSystem == false && packet.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
             {
-                //TODO: 로그 남기기 serilog otr nlog
+                //TODO: 로그 남기기 serilog otr nlog(여기에 serilog 사용 가능)
+                // Serilogのログイベントからの情報抜き出し方法
+                // https://qiita.com/skitoy4321/items/6863dd5c8e8eb7124130
+                //ASP.NET Core～SerilogからSeqでロギングしてslackに通知する
+                // http://ryuichi111std.hatenablog.com/entry/2016/07/20/111015
+
                 // 시스템만 보내어야할 패킷을 상대방이 보냈음. 해킹 의심
                 return;
             }
