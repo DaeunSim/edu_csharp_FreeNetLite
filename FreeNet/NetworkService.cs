@@ -6,12 +6,15 @@ using System.Threading;
 using System.Net;
 using System.Net.Sockets;
 
+
 namespace FreeNet
 {
     public class NetworkService
     {
-        SocketAsyncEventArgsPool ReceiveEventArgsPool;
-        SocketAsyncEventArgsPool SendEventArgsPool;
+        C3SockNetUtil.SocketAsyncEventArgsPool ReceiveEventArgsPool;
+        C3SockNetUtil.SocketAsyncEventArgsPool SendEventArgsPool;
+        //SocketAsyncEventArgsPool ReceiveEventArgsPool;
+        //SocketAsyncEventArgsPool SendEventArgsPool;
 
         public IPacketDispatcher PacketDispatcher { get; private set; }
 
@@ -71,17 +74,21 @@ namespace FreeNet
         {
             // receive버퍼만 할당해 놓는다.
             // send버퍼는 보낼때마다 할당하든 풀에서 얻어오든 하기 때문에.
-            int pre_alloc_count = 1;
-            var totalBytes = ServerOpt.MaxConnectionCount * ServerOpt.ReceiveBufferSize * pre_alloc_count;
-            BufferManager buffer_manager = new BufferManager(totalBytes, ServerOpt.ReceiveBufferSize);
-
-            // Allocates one large byte buffer which all I/O operations use a piece of.  This gaurds 
-            // against memory fragmentation
-            buffer_manager.InitBuffer();
+            //int pre_alloc_count = 1;
+            //var totalBytes = ServerOpt.MaxConnectionCount * ServerOpt.ReceiveBufferSize * pre_alloc_count;
+            //BufferManager buffer_manager = new BufferManager(totalBytes, ServerOpt.ReceiveBufferSize);
+            //buffer_manager.InitBuffer();
 
 
-            ReceiveEventArgsPool = new SocketAsyncEventArgsPool();
-            SendEventArgsPool = new SocketAsyncEventArgsPool();
+            // receive버퍼만 할당해 놓는다.
+            // send버퍼는 보낼때마다 할당하든 풀에서 얻어오든 하기 때문에.
+            const int pre_alloc_count = 1;
+            int argsCount = ServerOpt.MaxConnectionCount * pre_alloc_count;
+            int argsBufferSize = ServerOpt.ReceiveBufferSize;
+            ReceiveEventArgsPool = new C3SockNetUtil.SocketAsyncEventArgsPool();            
+            ReceiveEventArgsPool.Init(C3SockNetUtil.SocketAsyncEventArgsPoolBufferMgrType.Concurrent, argsCount, argsBufferSize);
+
+            SendEventArgsPool = new C3SockNetUtil.SocketAsyncEventArgsPool();
 
             // preallocate pool of SocketAsyncEventArgs objects
             SocketAsyncEventArgs arg;
@@ -101,7 +108,7 @@ namespace FreeNet
                     arg.UserToken = null;
 
                     // assign a byte buffer from the buffer pool to the SocketAsyncEventArg object
-                    buffer_manager.SetBuffer(arg);
+                    //buffer_manager.SetBuffer(arg);
 
                     // add SocketAsyncEventArg to the pool
                     ReceiveEventArgsPool.Push(arg);
@@ -277,6 +284,8 @@ namespace FreeNet
 
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
+                //TODO 받은 데이터를 패킷으로 처리 못하고 남은 것이 있는 경우 어떻게?
+                // 현재 구현은 receive에서 모든 패킷을 남김 없이 다 처리할 수 있다고 가정하고 있음
                 token.OnReceive(e.Buffer, e.Offset, e.BytesTransferred);
 
                 // Keep receive.

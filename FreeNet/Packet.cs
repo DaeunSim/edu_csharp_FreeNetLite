@@ -54,13 +54,17 @@ namespace FreeNet
 			Owner = owner;
 		}
 
-		//TODD: 버퍼 크기 설정할 수 있도록 한다.
-		public Packet()
+		public Packet(int size = 1024)
 		{
-			Buffer = new byte[1024];
+			Buffer = new byte[size];
 		}
 
-		public Int16 PopProtocolId()
+        public Packet(byte[] buffer)
+        {
+            Buffer = buffer;
+        }
+
+        public Int16 PopProtocolId()
 		{
 			return PopInt16();
 		}

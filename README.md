@@ -1,8 +1,8 @@
-FreeNet - .Net Core 
+FreeNetLite - .Net Core 
 =========
 원 버전은 닷넷 3.5 지원인데 .Net Core 지원으로 바꾼 것이다.  
-FreeNet은 .Net Standard 2,0 버전이고, SampleServer는 .Net Core 2.0 버전이다.  
-(그리고 코드 리팩토링도 하였다)    
+FreeNet은 .Net Standard 2.0 버전이고, SampleServer는 .Net Core 2.2 버전이다.  
+(그리고 코드 리팩토링도 하고 있다)    
    
 **현재 대규모 수정 중이다. 안정성 테스트를 하지 못했다(2017-10-25)**     
    
@@ -18,16 +18,10 @@ Version
 ----------
 * C# 비동기 네트워크 라이브러리.
 * 게임 서버에서 사용할 수 있는 TCP기반의 socket server.
-* .Net Core 2.0 사용
+* .Net Core 2.2 사용
 * Unity 연동 가능
-
-Project info
-----------
-* C# Asynchronous network library.
-* TCP socket server that can be used in game server.
-* .Net Core 2.0
-* Available in unity3d.
-
+  
+  
 Sample Game
 ----------
 ![viruswar](https://github.com/sunduk/FreeNet/blob/master/viruswar/client/doc/screenshot.png?raw=true)
