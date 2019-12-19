@@ -11,10 +11,9 @@ namespace FreeNet
 {
     public class NetworkService
     {
-        C3SockNetUtil.SocketAsyncEventArgsPool ReceiveEventArgsPool;
-        C3SockNetUtil.SocketAsyncEventArgsPool SendEventArgsPool;
-        //SocketAsyncEventArgsPool ReceiveEventArgsPool;
-        //SocketAsyncEventArgsPool SendEventArgsPool;
+        SocketAsyncEventArgsPool ReceiveEventArgsPool;
+        SocketAsyncEventArgsPool SendEventArgsPool;
+        
 
         public IPacketDispatcher PacketDispatcher { get; private set; }
 
@@ -85,10 +84,10 @@ namespace FreeNet
             const int pre_alloc_count = 1;
             int argsCount = ServerOpt.MaxConnectionCount * pre_alloc_count;
             int argsBufferSize = ServerOpt.ReceiveBufferSize;
-            ReceiveEventArgsPool = new C3SockNetUtil.SocketAsyncEventArgsPool();            
-            ReceiveEventArgsPool.Init(C3SockNetUtil.SocketAsyncEventArgsPoolBufferMgrType.Concurrent, argsCount, argsBufferSize);
+            ReceiveEventArgsPool = new SocketAsyncEventArgsPool();            
+            ReceiveEventArgsPool.Init(SocketAsyncEventArgsPoolBufferMgrType.Concurrent, argsCount, argsBufferSize);
 
-            SendEventArgsPool = new C3SockNetUtil.SocketAsyncEventArgsPool();
+            SendEventArgsPool = new SocketAsyncEventArgsPool();
 
             // preallocate pool of SocketAsyncEventArgs objects
             SocketAsyncEventArgs arg;

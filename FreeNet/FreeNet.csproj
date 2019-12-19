@@ -6,13 +6,6 @@
 
   <ItemGroup>
     <Compile Remove="BufferManager.cs" />
-    <Compile Remove="SocketAsyncEventArgsPool.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="C3SockNetUtil">
-      <HintPath>..\..\03_C3SockNetUtil\bin\netstandard2.0\C3SockNetUtil.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>
