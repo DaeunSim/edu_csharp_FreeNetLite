@@ -8,16 +8,19 @@ namespace FreeNet
     public class ServerOption
     {
         public int MaxConnectionCount = 10000;
-        public int ReceiveBufferSize = 8012;
-        public int MaxPacketSize = 1024;
         public int ReserveClosingWaitMilliSecond = 100;
-        public int SendPacketMTUForClient = 1024;
-        public int SendPacketMTUForServer = 8012;
+        public int ReceiveSecondaryBufferSize = 4012;
+
+        public int ClientReceiveBufferSize = 4096;
+        public int ClientMaxPacketSize = 1024;        
+        public int ClientSendPacketMTU = 1024;
+
+        public int ServerSendPacketMTU = 4096;
 
 
         public int SendPacketMTUSize(bool isClient)
         {
-            return isClient ? SendPacketMTUForClient : SendPacketMTUForServer;
+            return isClient ? ClientSendPacketMTU : ServerSendPacketMTU;
         }
     }
     

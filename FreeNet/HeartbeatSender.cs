@@ -6,6 +6,7 @@ using System.Threading;
 
 namespace FreeNet
 {
+    // 애플리케이션 레이어에서 이것을 사용하던가 사용하지 않도록 옵션으로 선택할 수 있게 한다.
     class HeartbeatSender
     {
         Session Remote;

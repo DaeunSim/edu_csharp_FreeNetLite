@@ -6,8 +6,8 @@ namespace FreeNet
 {
     public interface IMessageResolver
     {
-        void OnReceive(byte[] buffer, int offset, int transffered, Action<ArraySegment<byte>> callback);
+        void Init(int bufferSize);
 
-        void ClearBuffer();
+        void OnReceive(byte[] buffer, int offset, int transffered, Action<Packet> callback);             
     }
 }

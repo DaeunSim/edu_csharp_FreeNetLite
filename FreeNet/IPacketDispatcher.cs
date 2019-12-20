@@ -7,7 +7,7 @@ namespace FreeNet
 {
     public interface IPacketDispatcher
     {
-        void IncomingPacket(bool IsSystem, Session user, ArraySegment<byte> buffer);
+        void IncomingPacket(bool IsSystem, Session user, Packet packet);
 
         Queue<Packet> DispatchAll();
     }

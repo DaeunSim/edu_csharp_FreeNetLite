@@ -9,16 +9,14 @@ using System.Net.Sockets;
 
 namespace FreeNet
 {
-    public class NetworkService
+    public class NetworkService<TMessageResolver> where TMessageResolver : IMessageResolver, new()
     {
         SocketAsyncEventArgsPool ReceiveEventArgsPool;
         SocketAsyncEventArgsPool SendEventArgsPool;
         
 
         public IPacketDispatcher PacketDispatcher { get; private set; }
-
-        public IMessageResolver MessageResolver { get; private set; }
-
+                
         public SessionManager UserManager { get; private set; }
 
         public ServerOption ServerOpt { get; private set; }
@@ -38,8 +36,7 @@ namespace FreeNet
         ///  -> IO스레드에서 직접 메시지 처리를 담당하게 된다.
         /// </summary>
         /// <param name="use_logicthread">true=Create single logic thread. false=Not use any logic thread.</param>
-        public NetworkService(ServerOption serverOption, IPacketDispatcher userPacketDispatcher = null,
-                                IMessageResolver userMessageResolver = null)
+        public NetworkService(ServerOption serverOption, IPacketDispatcher userPacketDispatcher = null)
         {
             ServerOpt = serverOption;
             UserManager = new SessionManager();
@@ -51,15 +48,6 @@ namespace FreeNet
             else
             {
                 PacketDispatcher = userPacketDispatcher;
-            }
-
-            if (userMessageResolver == null)
-            {
-                MessageResolver = new DefaultMessageResolver(ServerOpt.MaxPacketSize * 3);
-            }
-            else
-            {
-                MessageResolver = userMessageResolver;
             }
         }
 
@@ -83,7 +71,7 @@ namespace FreeNet
             // send버퍼는 보낼때마다 할당하든 풀에서 얻어오든 하기 때문에.
             const int pre_alloc_count = 1;
             int argsCount = ServerOpt.MaxConnectionCount * pre_alloc_count;
-            int argsBufferSize = ServerOpt.ReceiveBufferSize;
+            int argsBufferSize = ServerOpt.ClientReceiveBufferSize;
             ReceiveEventArgsPool = new SocketAsyncEventArgsPool();            
             ReceiveEventArgsPool.Init(SocketAsyncEventArgsPoolBufferMgrType.Concurrent, argsCount, argsBufferSize);
 
@@ -187,7 +175,9 @@ namespace FreeNet
         {
             // UserToken은 매번 새로 생성하여 깨끗한 인스턴스로 넣어준다.
             var uniqueId = MakeSequenceIdForSession();
-            var user_token = new Session(true, uniqueId, PacketDispatcher, MessageResolver, ServerOpt);
+            var messageResolver = new TMessageResolver();
+            messageResolver.Init(ServerOpt.ReceiveSecondaryBufferSize);
+            var user_token = new Session(true, uniqueId, PacketDispatcher, messageResolver, ServerOpt);
             user_token.OnSessionClosed += OnSessionClosed;
 
 
@@ -203,12 +193,7 @@ namespace FreeNet
 
             user_token.OnConnected();
 
-            BeginReceive(client_socket, receive_args, send_args);
-
-            Packet msg = Packet.Create((short)NetworkDefine.SYS_START_HEARTBEAT);
-            var send_interval = (byte)5;
-            msg.Push(send_interval);
-            user_token.Send(msg);
+            BeginReceive(client_socket, receive_args, send_args);          
         }
 
         void BeginReceive(Socket socket, SocketAsyncEventArgs receive_args, SocketAsyncEventArgs send_args)

@@ -20,19 +20,14 @@ namespace FreeNet
         }
                        
 
-        public void IncomingPacket(bool IsSystem, Session user, ArraySegment<byte> buffer)
+        public void IncomingPacket(bool IsSystem, Session user, Packet packet)
         {
             // 여긴 IO스레드에서 호출된다.
             // 완성된 패킷을 메시지큐에 넣어준다.
-            var packet = new Packet(buffer, user);
-
+            
             if(IsSystem == false && packet.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
             {
-                //TODO: 로그 남기기 serilog otr nlog(여기에 serilog 사용 가능)
-                // Serilogのログイベントからの情報抜き出し方法
-                // https://qiita.com/skitoy4321/items/6863dd5c8e8eb7124130
-                //ASP.NET Core～SerilogからSeqでロギングしてslackに通知する
-                // http://ryuichi111std.hatenablog.com/entry/2016/07/20/111015
+                //TODO: 로그 남기기. 여기서는 로거의 인터페이스만 호출해야 한다. 로거의 구현은 애플리케이션에서 구현한다
 
                 // 시스템만 보내어야할 패킷을 상대방이 보냈음. 해킹 의심
                 return;

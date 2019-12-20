@@ -73,7 +73,7 @@ namespace FreeNet
             AutoHeartbeat = true;
             
             var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CONNECTED);
-            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.BodyData, 0, msg.Position));
         }
         
         public void SetEventArgs(SocketAsyncEventArgs receive_event_args, SocketAsyncEventArgs send_event_args)
@@ -94,10 +94,12 @@ namespace FreeNet
             RefMsgResolver.OnReceive(buffer, offset, transfered, OnMessageCompleted);
         }
 
-        void OnMessageCompleted(ArraySegment<byte> buffer)
+        void OnMessageCompleted(Packet packet)
         {
+            packet.Owner = this;
+
             // 로직 스레드의 큐를 타고 호출되도록 함.
-            Dispatcher.IncomingPacket(false, this, buffer);
+            Dispatcher.IncomingPacket(false, this, packet);
         }
 
         public void Close()
@@ -131,7 +133,7 @@ namespace FreeNet
             OnSessionClosed(this);
 
             var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CLOSED);
-            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.Buffer, 0, msg.Position));                
+            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.BodyData, 0, msg.Position));                
         }
 
 
@@ -178,10 +180,9 @@ namespace FreeNet
         }
 
 
-        public void Send(Packet msg)
+        public void Send(ArraySegment<byte> packetData)
         {
-            msg.RecordSize();
-            PreSend(new ArraySegment<byte>(msg.Buffer, 0, msg.Position));
+            PreSend(packetData);
         }
 
 

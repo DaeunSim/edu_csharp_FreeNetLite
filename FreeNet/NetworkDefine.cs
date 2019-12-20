@@ -16,9 +16,10 @@ namespace FreeNet
 #endregion
 
         // 하트비트 시작. S -> C
-        public const short SYS_START_HEARTBEAT = 111;
+        public const short SYS_START_HEARTBEAT = 11;
+        
         // 하트비트 갱신. C -> S
-        public const short SYS_UPDATE_HEARTBEAT = 112;
+        public const short SYS_UPDATE_HEARTBEAT = 12;
 
 
 
