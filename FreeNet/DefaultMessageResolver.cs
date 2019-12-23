@@ -10,10 +10,10 @@ namespace FreeNet
 	/// - header : 총 크기(2바이트), 패킷ID( 2바이트), 패킷 타입(1바이트)
 	/// - body : 메시지 본문.
 	/// </summary>
-	class DefaultMessageResolver : IMessageResolver
+	public class DefaultMessageResolver : IMessageResolver
 	{
-		public static readonly short HEADERSIZE = 5;
-		public static readonly short HEADER_PACKETID_POS = 2;
+		public static readonly UInt16 HEADERSIZE = 5;
+		public static readonly UInt16 HEADER_PACKETID_POS = 2;
 
 		// 진행중인 버퍼.
 		byte[] SecondaryBuffer;

@@ -8,9 +8,9 @@ namespace EchoServerIOThreadPacketProcess
 {
     class IoThreadPacketDispatcher : IPacketDispatcher
     {
-        FreeNet.NetworkService RefNetworkService = null;
+        FreeNet.NetworkService<FreeNet.DefaultMessageResolver> RefNetworkService = null;
 
-        static ConcurrentDictionary<Int64, GameUser> UserList = new ConcurrentDictionary<Int64, GameUser>();
+        static ConcurrentDictionary<UInt64, GameUser> UserList = new ConcurrentDictionary<UInt64, GameUser>();
 
         public IoThreadPacketDispatcher()
         {
@@ -18,15 +18,12 @@ namespace EchoServerIOThreadPacketProcess
 
         public Queue<Packet> DispatchAll() { return null; }
 
-        public void IncomingPacket(bool IsSystem, Session user, ArraySegment<byte> buffer)
-        {
-            var packet = new Packet(buffer, user);
-
-            var protocol = (PROTOCOL_ID)packet.PopProtocolId();
+        public void IncomingPacket(bool IsSystem, Session user, Packet packet)
+        {            
             //Console.WriteLine("------------------------------------------------------");
             //Console.WriteLine("protocol id " + protocol);
 
-            if (IsSystem == false && packet.PopProtocolId() <= (short)NetworkDefine.SYS_NTF_MAX)
+            if (IsSystem == false && (packet.ProtocolId <= NetworkDefine.SYS_NTF_MAX))
             {
                 //TODO: 로그 남기기
                 // 시스템만 보내어야할 패킷을 상대방이 보냈음. 해킹 의심
@@ -34,16 +31,19 @@ namespace EchoServerIOThreadPacketProcess
             }
 
 
+            var protocol = (PROTOCOL_ID)packet.ProtocolId;
+
             switch (protocol)
             {
                 case PROTOCOL_ID.ECHO_REQ:
                     {
-                        string text = packet.PopString();
-                        Console.WriteLine(string.Format("text {0}", text));
+                        var requestPkt = new EchoPacket();
+                        requestPkt.Decode(packet.BodyData);
+                        Console.WriteLine(string.Format("text {0}", requestPkt.Data));
 
-                        var response = FreeNet.Packet.Create((short)PROTOCOL_ID.ECHO_ACK);
-                        response.Push(text);
-                        packet.Owner.Send(response);
+                        var responsePkt = new EchoPacket();
+                        var packetData = responsePkt.ToPacket(PROTOCOL_ID.ECHO_ACK, packet.BodyData);
+                        packet.Owner.Send(new ArraySegment<byte>(packetData, 0, packetData.Length));
                     }
                     break;
                 default:
@@ -57,11 +57,7 @@ namespace EchoServerIOThreadPacketProcess
             }
         }
          
-        public void SetNetService(FreeNet.NetworkService service)
-        {
-            RefNetworkService = service;
-        }
-
+      
         bool OnSystemPacket(FreeNet.Packet packet)
         {
             var session = packet.Owner;
@@ -84,23 +80,7 @@ namespace EchoServerIOThreadPacketProcess
                     Console.WriteLine("SYS_NTF_CLOSED : " + session.UniqueId);
                     //RefNetworkService.OnSessionClosed(session); 
                     UserList.TryRemove(session.UniqueId, out var temp);
-                    return true;
-
-
-                case FreeNet.NetworkDefine.SYS_START_HEARTBEAT:
-                    // 순서대로 파싱해야 하므로 프로토콜 아이디는 버린다.
-                    packet.PopProtocolId();
-                    // 전송 인터벌.
-                    byte interval = packet.PopByte();
-
-                    session.StartHeartbeat(interval);
-                    return true;
-
-                case FreeNet.NetworkDefine.SYS_UPDATE_HEARTBEAT:
-                    Console.WriteLine("heartbeat : " + DateTime.Now);
-
-                    session.LatestHeartbeatTime = DateTime.Now.Ticks;
-                    return true;
+                    return true;   
             }
 
             return false;

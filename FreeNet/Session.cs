@@ -14,7 +14,7 @@ namespace FreeNet
         const int STATE_RESERVECLOSING = 0;
         const int STATE_CLOSED = 0;
                 
-        public Int64 UniqueId { get; private set; } = 0;
+        public UInt64 UniqueId { get; private set; } = 0;
 
         public bool IsClient { get; private set; } = true;
 
@@ -47,12 +47,10 @@ namespace FreeNet
         public Action<Session> OnSessionClosed;
         
         // heartbeat.
-        public long LatestHeartbeatTime;
-        HeartbeatSender HeartbeatSender;
-        bool AutoHeartbeat;
+        public UInt64 LatestHeartbeatTime;
 
 
-        public Session(bool isClient, Int64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver, ServerOption serverOption)
+        public Session(bool isClient, UInt64 uniqueId, IPacketDispatcher dispatcher, IMessageResolver messageResolver, ServerOption serverOption)
         {
             IsClient = isClient;
             UniqueId = uniqueId;
@@ -63,17 +61,22 @@ namespace FreeNet
 
             SendingList = new List<ArraySegment<byte>>();
             
-            LatestHeartbeatTime = DateTime.Now.Ticks;
+            LatestHeartbeatTime = (UInt64)DateTime.Now.Ticks;
         }
 
         public void OnConnected()
         {
             CurrentState = STATE_CONNECTED;
             IsClosed = 0;
-            AutoHeartbeat = true;
             
-            var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CONNECTED);
-            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.BodyData, 0, msg.Position));
+            var msg = new Packet(this, (UInt16)NetworkDefine.SYS_NTF_CONNECTED);
+            Dispatcher.IncomingPacket(true, this, msg);
+
+            if (ServerOpt.ClientHeartBeatIntervalSec > 0)
+            {
+                var heartBeatPkt = new Packet(this, (UInt16)NetworkDefine.SYS_START_HEARTBEAT);
+                Dispatcher.IncomingPacket(true, this, heartBeatPkt);
+            }
         }
         
         public void SetEventArgs(SocketAsyncEventArgs receive_event_args, SocketAsyncEventArgs send_event_args)
@@ -127,13 +130,10 @@ namespace FreeNet
 
             SendingList.Clear();
             
-            RefMsgResolver.ClearBuffer();
-
-
             OnSessionClosed(this);
 
-            var msg = Packet.Create((short)NetworkDefine.SYS_NTF_CLOSED);
-            Dispatcher.IncomingPacket(true, this, new ArraySegment<byte>(msg.BodyData, 0, msg.Position));                
+            var msg = new Packet(this, (UInt16)NetworkDefine.SYS_NTF_CLOSED);
+            Dispatcher.IncomingPacket(true, this, msg);                
         }
 
 
@@ -146,7 +146,7 @@ namespace FreeNet
         ///		현재 진행중인 SendAsync가 완료되었을 때 큐를 검사하여 나머지 패킷을 전송한다.
         /// </summary>
         /// <param name="msg"></param>
-        public void PreSend(ArraySegment<byte> data)
+        void PreSend(ArraySegment<byte> data)
         {
             if(IsConnected() == false)
             {
@@ -329,53 +329,10 @@ namespace FreeNet
             }
         }
 
-        public void StartHeartbeat(uint interval)
-        {
-            HeartbeatSender = new HeartbeatSender(this, interval);
-
-            if (AutoHeartbeat)
-            {
-                StartHeartbeat();
-            }
-        }
-        
         public bool IsConnected()
         {
             return CurrentState == STATE_CONNECTED;
         }
-
-
-        public void StartHeartbeat()
-        {
-            if (HeartbeatSender != null)
-            {
-                HeartbeatSender.Play();
-            }
-        }
-
-
-        public void StopHeartbeat()
-        {
-            if (HeartbeatSender != null)
-            {
-                HeartbeatSender.Stop();
-            }
-        }
-
-
-        public void DisableAutoHeartbeat()
-        {
-            StopHeartbeat();
-            AutoHeartbeat = false;
-        }
-
-
-        public void UpdateHeartbeatManually(Int32 secondTime)
-        {
-            if (HeartbeatSender != null)
-            {
-                HeartbeatSender.Update(secondTime);
-            }
-        }
+        
     }
 }

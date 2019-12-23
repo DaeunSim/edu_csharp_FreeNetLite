@@ -16,7 +16,7 @@ namespace FreeNet
         // 현재 Users에 추가된 유저 수. ConcurrentDictionary의 Count를 사용하면 일일이 계산하므로 따로 변수로 계산해 놓는다.
         Int64 CurrentCount;
 
-        ConcurrentDictionary<Int64, Session> Users = new ConcurrentDictionary<Int64, Session>();
+        ConcurrentDictionary<UInt64, Session> Users = new ConcurrentDictionary<UInt64, Session>();
 
         Timer TimerHeartbeat;
         long HeartbeatDuration;
@@ -67,11 +67,11 @@ namespace FreeNet
 
         void CheckHeartbeat(object state)
         {
-            long allowed_time = DateTime.Now.Ticks - this.HeartbeatDuration;
+            var allowed_time = (UInt64)(DateTime.Now.Ticks - this.HeartbeatDuration);
 
             foreach(var user in Users.Values)
             {
-                long heartbeat_time = user.LatestHeartbeatTime;
+                var heartbeat_time = user.LatestHeartbeatTime;
                 if (heartbeat_time >= allowed_time)
                 {
                     continue;

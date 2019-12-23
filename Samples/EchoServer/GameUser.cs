@@ -13,17 +13,6 @@ namespace SampleServer
 		public GameUser(Session session)
 		{
 			Session = session;
-		}
-
-		public void Send(Packet pkt)
-		{
-			pkt.RecordSize();
-			Session.PreSend(new ArraySegment<byte>(pkt.Buffer, 0, pkt.Position));
-		}
-
-		void Send(ArraySegment<byte> data)
-		{
-			Session.PreSend(data);
-		}
+		}		
 	}
 }

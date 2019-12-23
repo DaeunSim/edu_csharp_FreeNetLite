@@ -17,11 +17,11 @@ namespace FreeNet
 
         public IPacketDispatcher PacketDispatcher { get; private set; }
                 
-        public SessionManager UserManager { get; private set; }
+        public SessionManager SessionMgr { get; private set; }
 
         public ServerOption ServerOpt { get; private set; }
 
-        Int64 SequenceId = 0;
+        UInt64 SequenceId = 0;
 
         ReserveClosingProcess ReserveClosingProc = new ReserveClosingProcess();
 
@@ -39,7 +39,7 @@ namespace FreeNet
         public NetworkService(ServerOption serverOption, IPacketDispatcher userPacketDispatcher = null)
         {
             ServerOpt = serverOption;
-            UserManager = new SessionManager();
+            SessionMgr = new SessionManager();
 
             if (userPacketDispatcher == null)
             {
@@ -134,7 +134,7 @@ namespace FreeNet
 
             // heartbeat.
             byte check_interval = 10;
-            UserManager.StartHeartbeatChecking(check_interval, check_interval);
+            SessionMgr.StartHeartbeatChecking(check_interval, check_interval);
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace FreeNet
         {
             token.OnSessionClosed += OnSessionClosed;
 
-            UserManager.Add(token);
+            SessionMgr.Add(token);
 
             // SocketAsyncEventArgsPool에서 빼오지 않고 그때 그때 할당해서 사용한다.
             // 풀은 서버에서 클라이언트와의 통신용으로만 쓰려고 만든것이기 때문이다.
@@ -165,7 +165,8 @@ namespace FreeNet
             BeginReceive(socket, receive_event_arg, send_event_arg);
         }
 
-        public Int64 MakeSequenceIdForSession() { return Interlocked.Increment(ref SequenceId); }
+        // 스레드 세이프 하지 않다
+        public UInt64 MakeSequenceIdForSession() { return ++SequenceId; }
         /// <summary>
         /// 새로운 클라이언트가 접속 성공 했을 때 호출됩니다.
         /// AcceptAsync의 콜백 매소드에서 호출되며 여러 스레드에서 동시에 호출될 수 있기 때문에 공유자원에 접근할 때는 주의해야 합니다.
@@ -181,7 +182,7 @@ namespace FreeNet
             user_token.OnSessionClosed += OnSessionClosed;
 
 
-            UserManager.Add(user_token);
+            SessionMgr.Add(user_token);
 
             // 플에서 하나 꺼내와 사용한다.
             SocketAsyncEventArgs receive_args = this.ReceiveEventArgsPool.Pop();
@@ -268,8 +269,6 @@ namespace FreeNet
 
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
-                //TODO 받은 데이터를 패킷으로 처리 못하고 남은 것이 있는 경우 어떻게?
-                // 현재 구현은 receive에서 모든 패킷을 남김 없이 다 처리할 수 있다고 가정하고 있음
                 token.OnReceive(e.Buffer, e.Offset, e.BytesTransferred);
 
                 // Keep receive.
@@ -289,7 +288,7 @@ namespace FreeNet
 
         public void OnSessionClosed(Session token)
         {
-            UserManager.Remove(token);
+            SessionMgr.Remove(token);
 
             // Free the SocketAsyncEventArg so they can be reused by another client
             // 버퍼는 반환할 필요가 없다. SocketAsyncEventArg가 버퍼를 물고 있기 때문에

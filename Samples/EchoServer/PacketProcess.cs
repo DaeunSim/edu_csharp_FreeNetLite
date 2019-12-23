@@ -8,7 +8,7 @@ namespace SampleServer
 {
     class PacketProcess
     {
-        static Dictionary<Int64, GameUser> UserList = new Dictionary<Int64, GameUser>();
+        static Dictionary<UInt64, GameUser> UserList = new Dictionary<UInt64, GameUser>();
 
 
         bool IsStart = false;
@@ -16,12 +16,17 @@ namespace SampleServer
         Thread LogicThread = null;
 
         FreeNet.IPacketDispatcher RefPacketDispatcher = null;
-        FreeNet.NetworkService RefNetworkService = null;
 
-        public PacketProcess(FreeNet.NetworkService netService)
+        FreeNet.NetworkService<FreeNet.DefaultMessageResolver> RefNetworkService = null;
+
+        FreeNet.ServerOption ServerOpt;
+
+        public PacketProcess(FreeNet.NetworkService<FreeNet.DefaultMessageResolver> netService)
         {
             RefNetworkService = netService;
             RefPacketDispatcher = netService.PacketDispatcher;
+
+            ServerOpt = netService.ServerOpt;
         }
 
         /// <summary>
@@ -70,21 +75,30 @@ namespace SampleServer
         void OnMessage(FreeNet.Packet packet)
         {
             // ex)
-            PROTOCOL_ID protocol = (PROTOCOL_ID)packet.PopProtocolId();
+            PROTOCOL_ID protocol = (PROTOCOL_ID)packet.ProtocolId;
             //Console.WriteLine("------------------------------------------------------");
             //Console.WriteLine("protocol id " + protocol);
             switch (protocol)
             {
                 case PROTOCOL_ID.ECHO_REQ:
                     {
-                        string text = packet.PopString();
-                        Console.WriteLine(string.Format("text {0}", text));
+                        var requestPkt = new EchoPacket();
+                        requestPkt.Decode(packet.BodyData);
+                        Console.WriteLine(string.Format("text {0}", requestPkt.Data));
 
-                        var response = FreeNet.Packet.Create((short)PROTOCOL_ID.ECHO_ACK);
-                        response.Push(text);
-                        packet.Owner.Send(response);                                                
+                        var responsePkt = new EchoPacket();
+                        var packetData = responsePkt.ToPacket(PROTOCOL_ID.ECHO_ACK, packet.BodyData);
+                        packet.Owner.Send(new ArraySegment<byte>(packetData, 0, packetData.Length));                                                
                     }
                     break;
+                case PROTOCOL_ID.HEARTBEAT_UPDATE_NOTIFY:
+                    {
+                        Console.WriteLine($"heartbeat: {DateTime.Now}");
+
+                        packet.Owner.LatestHeartbeatTime = (UInt64)DateTime.Now.Ticks;
+                    }
+                    break;
+
                 default:
                     {
                         if (OnSystemPacket(packet) == false)
@@ -107,34 +121,25 @@ namespace SampleServer
             {
                 // 이 처리는 꼭 해줘야 한다.
                 case FreeNet.NetworkDefine.SYS_NTF_CONNECTED:
-                    Console.WriteLine("SYS_NTF_CONNECTED : " + session.UniqueId);
+                    Console.WriteLine($"SYS_NTF_CONNECTED: {session.UniqueId}");
 
                     var user = new GameUser(session);
                     UserList.Add(session.UniqueId, user);
                     return true;
-
+    
                 // 이 처리는 꼭 해줘야 한다.
                 case FreeNet.NetworkDefine.SYS_NTF_CLOSED:
-                    Console.WriteLine("SYS_NTF_CLOSED : " + session.UniqueId);
+                    Console.WriteLine($"SYS_NTF_CLOSED: {session.UniqueId}");
                     //RefNetworkService.OnSessionClosed(session); 
                     UserList.Remove(session.UniqueId);
                     return true;
-
-
+                    
                 case FreeNet.NetworkDefine.SYS_START_HEARTBEAT:
-                    // 순서대로 파싱해야 하므로 프로토콜 아이디는 버린다.
-                    packet.PopProtocolId();
-                    // 전송 인터벌.
-                    byte interval = packet.PopByte();
-
-                    session.StartHeartbeat(interval);                        
+                    var notifyPkt = new HeartBeatStartNtfPacket();
+                    notifyPkt.IntervalSec = ServerOpt.ClientHeartBeatIntervalSec;
+                    var pakcetData = notifyPkt.ToPacket();
+                    session.Send(new ArraySegment<byte>(pakcetData, 0, pakcetData.Length));
                     return true;
-
-                case FreeNet.NetworkDefine.SYS_UPDATE_HEARTBEAT:
-                    Console.WriteLine("heartbeat : " + DateTime.Now);
-
-                    session.LatestHeartbeatTime = DateTime.Now.Ticks;
-                    return true;                
             }                     
 
             return false;

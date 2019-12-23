@@ -12,10 +12,8 @@ namespace EchoServerIOThreadPacketProcess
 
 
 			var serverOpt = new FreeNet.ServerOption();
-			serverOpt.MaxConnectionCount = 10000;
-			serverOpt.ReceiveBufferSize = 1024;
 						
-			var service = new FreeNet.NetworkService(serverOpt);
+			var service = new FreeNet.NetworkService<FreeNet.DefaultMessageResolver>(serverOpt);
 			service.Initialize();
 						
 			var socketOpt = new FreeNet.SocketOption();
@@ -33,7 +31,7 @@ namespace EchoServerIOThreadPacketProcess
 
 				if (input.Equals("users"))
 				{
-					Console.WriteLine(service.UserManager.GetTotalCount());
+					Console.WriteLine(service.SessionMgr.GetTotalCount());
 				}
 				else if (input.Equals("Exit Process"))
 				{

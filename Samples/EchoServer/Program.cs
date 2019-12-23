@@ -9,11 +9,8 @@ namespace SampleServer
 
 		static void Main(string[] args)
 		{
-			var serverOpt = new FreeNet.ServerOption();
-			serverOpt.MaxConnectionCount = 10000;
-			serverOpt.ReceiveBufferSize = 1024;
-
-			var service = new FreeNet.NetworkService(serverOpt);					
+			var serverOpt = new FreeNet.ServerOption();			
+			var service = new FreeNet.NetworkService<FreeNet.DefaultMessageResolver>(serverOpt, null);					
 			service.Initialize();
 
 			var socketOpt = new FreeNet.SocketOption();
@@ -35,7 +32,7 @@ namespace SampleServer
 
 				if (input.Equals("users"))
 				{
-					Console.WriteLine(service.UserManager.GetTotalCount());
+					Console.WriteLine(service.SessionMgr.GetTotalCount());
 				}
 				else if (input.Equals("exit"))
 				{
